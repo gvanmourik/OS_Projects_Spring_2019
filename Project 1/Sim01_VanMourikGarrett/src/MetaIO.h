@@ -2,10 +2,13 @@
 #define META_IO
 
 #include <vector>
+#include <sstream>
 #include <fstream>
 #include <iostream>
 #include <type_traits>
 
+#include "Stream.h"
+#include "ConfigData.h"
 #include "MetaData.h"
 
 #define UNASSIGNED "NAH"
@@ -13,6 +16,7 @@
 class MetaIO 
 {
 private:
+	bool startFlag = false;
 	std::string FilePath;
 	std::vector<MetaData> FileData;
 
@@ -28,64 +32,203 @@ public:
 	
 
 	// Other functions
-	bool readFile()
+	bool readFile(std::vector<std::string> &errlog)
 	{
+		// std::cout << "in read file..." << std::endl;
+
 		std::string currentStr;
 		std::ifstream metaFile(FilePath);
-		if ( metaFile.is_open() )
+		if (metaFile.peek() == std::ifstream::traits_type::eof())
 		{
-			printf("meta file is open...\n");
-
-			std::getline(metaFile, currentStr);
-			if ( currentStr != "Start Program Meta-Data Code:" )
-			{
-				//throw 'file not formatted correctly' error
-				return false;
-			}
-
-
-			MetaData lineData;
-			std::string dataStr;
-			char closingChar = '0';
-			// std::getline(metaFile, currentStr, ' ');
-			// auto closingChar = *(currentStr.end()-1);
-			// auto dataStr = currentStr.substr(0, currentStr.find(closingChar));
-			
-			while ( closingChar != '.' )
-			{
-				std::getline(metaFile, currentStr, ' ');
-				closingChar = *(currentStr.end()-1);
-				dataStr = currentStr.substr(0, currentStr.find(closingChar));
-
-				std::cout << dataStr << std::endl;
-				std::cout << closingChar << std::endl;
-
-				if ( !lineData.extractData(dataStr) )
-				{
-					printf("ERROR!!!\n");
-					//throw 'file not formatted correctly' error
-					return false;
-				}
-				FileData.push_back(lineData);
-			}
-
-
-		}
-		else
-		{
-			printf("meta file is NOT open...\n");
-
-			//throw 'file not open' error
+			errlog.push_back(" ERROR: Meta-Data file is empty!\n");
 			return false;
 		}
 
-		printf("done.......\n");
+		if ( metaFile.is_open() )
+		{
+			// std::cout << "file is open..." << std::endl;
+			if ( !readline(metaFile, currentStr) )
+			{
+				errlog.push_back(" ERROR: Meta-data file not formatted correctly! {start/end section}\n");
+				return false;
+			}
+
+			MetaData lineData;
+			std::string dataStr;
+			
+			// Collect meta-data
+			if ( !readline(metaFile, currentStr) )
+			{
+				errlog.push_back(" ERROR: Meta-data file not formatted correctly! {start/end section}\n");
+				return false;
+			}
+			bool lastMetaDataLine;
+			if ( *(currentStr.end()-1) == '.' )
+				lastMetaDataLine = true;
+			
+			while ( !lastMetaDataLine )
+			{
+				// remove the whitespace from each line
+				currentStr.erase( remove_if(currentStr.begin(), currentStr.end(), isspace), currentStr.end() );
+				std::stringstream lineStream(currentStr);
+			    while ( std::getline(lineStream, dataStr, ';') ) 
+			    {
+					if ( !lineData.extractData(dataStr) )
+					{
+						errlog.push_back(" ERROR: File not formatted correctly! {in meta-data}\n");
+						return false;
+					}
+					// lineData->print();
+					FileData.push_back(lineData);
+			    }
+
+			    if ( !readline(metaFile, currentStr) )
+				{
+					errlog.push_back(" ERROR: Meta-data file not formatted correctly! {start/end section}\n");
+					return false;
+				}
+				if ( *(currentStr.end()-1) == '.' )
+					lastMetaDataLine = true;
+			}
+
+			// deal with the last valid meta data line
+			currentStr.erase( remove_if(currentStr.begin(), currentStr.end(), isspace), currentStr.end() );
+			auto lastString = currentStr.substr(0, currentStr.find("."));
+			std::stringstream lineStream(lastString);
+			while ( std::getline(lineStream, dataStr, ';') ) 
+		    {
+		    	// remove whitespace from string
+		        dataStr.erase( remove_if(dataStr.begin(), dataStr.end(), isspace), dataStr.end() );
+		        // std::cout << dataStr << std::endl;
+
+				if ( !lineData.extractData(dataStr) )
+				{
+					errlog.push_back(" ERROR: File not formatted correctly! {in meta-data}\n");
+					return false;
+				}
+				FileData.push_back(lineData);
+		    }
+
+		    if ( !readline(metaFile, currentStr) )
+			{
+				errlog.push_back(" ERROR: Meta-data file not formatted correctly! {start/end section\n");
+				return false;
+			}
+			if ( currentStr != "End Program Meta-Data Code." )
+			{
+				errlog.push_back(" ERROR: File not formatted correctly! {in start section}\n");
+				return false;
+			}
+		    metaFile.close();
+		}
+		else
+		{
+			errlog.push_back(" ERROR: File did not open!\n");
+			return false;
+		}
+
+		// std::cout << "done..." << std::endl;
 
 		return true;
 	}
 
+	// Custom version of getline that both gets the line and checks if
+	// 	that line is the end of the meta-data
+	bool readline(std::ifstream &metaFile, std::string &currentStr)
+	{
+		std::getline(metaFile, currentStr);
+		if ( currentStr == "Start Program Meta-Data Code:" )
+		{
+			// if flag = true; u saw another Start -> return false;
+			if ( startFlag )
+				return false;
+			else
+				startFlag = true;
+		}
+		else if ( currentStr == "End Program Meta-Data Code." )
+		{
+			if ( startFlag )
+				startFlag = false;
+			else
+				return false;
+		}
+		return true;
+	}
 
+	void print(runtime_key_t RTKey)
+	{
+		std::cout << "Meta-Data Metrics:" << std::endl;
+		for (auto metaLineData : FileData)
+		{
+			int runtime;
+			if ( metaLineData.getType() == "S" )
+			{
+				metaLineData.print(0);
+			}
+			if ( metaLineData.getType() == "A" )
+			{
+				metaLineData.print(0);
+			}
+			if ( metaLineData.getType() == "P" )
+			{
+				if ( metaLineData.getDescriptor() == "run" )
+				{
+					// printf("test2\n");
+					runtime = RTKey["processor"];
+					metaLineData.print(runtime);
+				}
+			}	
+			if ( metaLineData.getType() == "I" )
+			{
+				// printf("test1\n");
+				// std::cout << metaLineData.getDescriptor() << std::endl;
+				// int time;
+				if ( metaLineData.getDescriptor() == "harddrive" )
+				{
+					// printf("test2\n");
+					runtime = RTKey["harddrive"];
+					metaLineData.print(runtime);
+				}
+				if ( metaLineData.getDescriptor() == "scanner" )
+				{
+					runtime = RTKey["scanner"];
+					metaLineData.print(runtime);
+				}
+				if ( metaLineData.getDescriptor() == "keyboard" )
+				{
+					runtime = RTKey["keyboard"];
+					metaLineData.print(runtime);
+				}
+			}
+			if ( metaLineData.getType() == "O" )
+			{
+				// printf("test1\n");
+				// std::cout << metaLineData.getDescriptor() << std::endl;
+				if ( metaLineData.getDescriptor() == "harddrive" )
+				{
+					// printf("test2\n");
+					runtime = RTKey["harddrive"];
+					metaLineData.print(runtime);
+				}
+				if ( metaLineData.getDescriptor() == "monitor" )
+				{
+					runtime = RTKey["monitor"];
+					metaLineData.print(runtime);
+				}
+				if ( metaLineData.getDescriptor() == "projector" )
+				{
+					runtime = RTKey["projector"];
+					metaLineData.print(runtime);
+				}
+			}
+			if ( metaLineData.getType() == "M" )
+			{
+				runtime = RTKey["memory"];
+				metaLineData.print(runtime);
+			}
 
+		}
+	}
 
 };
 

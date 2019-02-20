@@ -2,25 +2,27 @@
 #define CONFIG_IO
 
 #include <vector>
+#include <sstream>
 #include <fstream>
 #include <iostream>
+#include <algorithm>
 #include <type_traits>
 
-#include "MetaData.h"
+#include "Stream.h"
 #include "ConfigData.h"
 
 #define UNASSIGNED "NAH"
-
-enum file_t {CONFIG, METADATA};
 
 class ConfigIO 
 {
 private:
 	double configVer;
 	std::string FilePath;
-	std::string logFileName;
+	std::string logType;
 	std::string logFilePath;
 	std::string metaFilePath;
+	// std::ostringstream std::cout;
+	runtime_key_t RuntimeKey;
 	std::vector<ConfigData> FileData;
 
 
@@ -29,6 +31,7 @@ public:
 	ConfigIO(std::string _filePath, std::string _logFilePath = "NONE") : 
 		FilePath(_filePath), logFilePath(_logFilePath)
 	{
+		logType = MONITOR;
 		metaFilePath = UNASSIGNED;
 	}
 	~ConfigIO(){}
@@ -36,7 +39,10 @@ public:
 
 	// Access functions
 	std::string getPath() { return FilePath; }
+	std::string getLogType() { return logType; }
 	std::string getLogPath() { return logFilePath; }
+	// std::vector<ConfigData> getFileData() { return FileData; }
+	runtime_key_t getRuntimeKey() { return RuntimeKey; }
 	bool getMetaPath(std::string &returnMetaPath) 
 	{
 		if ( metaFilePath != UNASSIGNED )
@@ -48,43 +54,46 @@ public:
 	}
 	
 	// I/O functions
-	bool readFile()
+	bool readFile(std::vector<std::string> &errlog)
 	{
 		std::string currentStr, fileExt;
+		//check if config file is empty
 		std::ifstream configFile(FilePath);
+		if (configFile.peek() == std::ifstream::traits_type::eof())
+		{
+			errlog.push_back(" ERROR: Config file is empty!\n");
+			return false;
+		}
+
 		if ( configFile.is_open() )
 		{
 			// check for start...throw error if "Start" not found
 			std::getline(configFile, currentStr);
 			if ( currentStr != "Start Simulator Configuration File" )
 			{
-				//throw 'file not formatted correctly' error
+				errlog.push_back(" ERROR: Config file not formatted correctly! {in start section}\n");
 				return false;
 			}
-
 
 			// read in version number
 			std::getline(configFile, currentStr, ':');
 			if ( currentStr != "Version/Phase" )
 			{
-				//throw 'file not formatted correctly' error
+				errlog.push_back(" ERROR: Config file not formatted correctly! {version header}\n");
 				return false;
 			}
 			configFile >> std::skipws >> currentStr;
 			configVer = std::atof( currentStr.c_str() );
-			printf("%f\n", configVer );
-
 
 			// read in meta file path
 			std::getline(configFile, currentStr); //skip newline
 			std::getline(configFile, currentStr, ':');
 			if ( currentStr != "File Path" )
 			{
-				//throw 'file not formatted correctly' error
+				errlog.push_back(" ERROR: Config file not formatted correctly! {in meta file path header}\n");
 				return false;
 			}
 			configFile >> std::skipws >> metaFilePath;
-
 
 			// determine meta data file type
 			auto fileExtStart = metaFilePath.end();
@@ -98,12 +107,10 @@ public:
 			}
 			if ( fileExt != ".mdf" )
 			{
-				//throw 'provided meta data file is wrong type' error
+				errlog.push_back(" ERROR: Meta-data file is the wrong type!\n");
 				return false;
 			}
 			std::getline(configFile, currentStr); //skip newline
-			printf("%s\n", fileExt.c_str() );
-
 
 			// Collect meta data line-by-line
 			ConfigData lineData;
@@ -115,11 +122,21 @@ public:
 			{
 				if ( !lineData.extractData(currentStr) )
 				{
-					printf("ERROR!!!\n");
-					//throw 'file not formatted correctly' error
+					errlog.push_back(" ERROR: Config file not formatted correctly! {in config data}\n");
 					return false;
 				}
+				// print each line of data in real-time
+				// lineData.print();
+				// add to file data
 				FileData.push_back(lineData);
+				
+				// recover descriptor
+				auto Descriptor = lineData.getDescriptor();
+				// clean up descriptor string
+				std::transform(Descriptor.begin(), Descriptor.end(), Descriptor.begin(), ::tolower);
+				Descriptor.erase( remove_if(Descriptor.begin(), Descriptor.end(), isspace), Descriptor.end() );
+				// add descriptor to key
+				RuntimeKey[Descriptor] = lineData.getRuntime();
 				
 				std::getline(configFile, currentStr); //next line
 				lineStart = currentStr.substr( 0, currentStr.find(":") );
@@ -127,9 +144,25 @@ public:
 					[](char c){ return c == '{'; } );
 			}
 
-
 			// Collect log file and path
-			logFileName = currentStr.substr( currentStr.find(":")+2 );
+			lineStart = currentStr.substr(0, currentStr.find(":"));
+			if ( lineStart != "Log" )
+			{
+				errlog.push_back(" ERROR: Config file not formatted correctly! {in log header}\n");
+				return false;
+			}
+			// std::cout << lineStart << std::endl;
+
+			logType = currentStr.substr( currentStr.find(":")+1 );
+			logType.erase( remove_if(logType.begin(), logType.end(), isspace), logType.end() );
+			// std::cout << "logType = " << logType << std::endl;
+			if ( LogType.find(logType) == LogType.end() )
+			{
+				errlog.push_back(" ERROR: Log type is not allowed!\n");
+				return false;
+			}
+
+			// std::cout << logType << std::endl;
 			std::getline(configFile, currentStr, ':');
 			configFile >> std::skipws >> logFilePath;
 
@@ -146,37 +179,52 @@ public:
 			}
 			if ( fileExt != ".lgf" )
 			{
-				//throw 'provided meta data file is wrong type' error
+				errlog.push_back(" ERROR: Log-data file is the wrong type!\n");
 				return false;
 			}
+			
+			// check end section of config file
 			std::getline(configFile, currentStr); //skip newline
-			printf("%s\n", fileExt.c_str() );
-
-
 			std::getline(configFile, currentStr);
 			if ( currentStr != "End Simulator Configuration File" )
 			{
-				//throw 'file not formatted correctly' error
+				errlog.push_back(" ERROR: Config file not formatted correctly! {in end section}\n");
 				return false;
 			}
 
-
-
 			// check for end...throw error if "End" not fund
-			printf("closing config file...\n");
 			configFile.close();
 		}
 		else
 		{
-			printf("config file is NOT open...\n");
-
-			//throw 'file not open' error
+			errlog.push_back(" ERROR: File did not open!\n");
 			return false;
 		}
-
-		printf("done.......\n");
-
 		return true;
+	}
+
+	void print()
+	{
+		std::cout << "Configuration File Data:" << std::endl;
+		for (auto lineData : FileData)
+		{
+			lineData.print();
+		}
+
+		std::cout << "\tLogged to: ";
+		if ( logType == MONITOR )
+		{
+			std::cout << "monitor" << std::endl;
+		}
+		if ( logType == FILE )
+		{
+			std::cout << logFilePath << std::endl;
+		}
+		if ( logType == BOTH )
+		{
+			std::cout << "monitor and " << logFilePath << std::endl;
+		}
+		std::cout << std::endl;
 	}
 
 

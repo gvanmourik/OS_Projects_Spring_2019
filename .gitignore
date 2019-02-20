@@ -1,0 +1,10 @@
+## Files Types
+*.pdf
+*.lgf
+*.mdf
+
+## Directories
+
+
+## Other
+.DS_Store

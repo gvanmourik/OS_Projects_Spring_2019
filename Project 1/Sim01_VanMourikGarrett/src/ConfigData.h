@@ -4,7 +4,18 @@
 // #define MSEC "msec"
 // #define USEC "usec"
 
+#include <map>
 #include <string>
+#include <unordered_set>
+
+#define BOTH 	"LogtoBoth"
+#define MONITOR "LogtoMonitor"
+#define FILE 	"LogtoFile"
+
+typedef std::map<std::string, int> runtime_key_t;
+std::unordered_set<std::string> LogType = {BOTH, 
+										   FILE,
+										   MONITOR}; 
 
 // enum descriptor_t {HD,
 // 					    KEYS,
@@ -18,10 +29,13 @@ class ConfigData
 {
 private:
 	int runTime;
-	std::string DeviceType;
+	std::string Descriptor;
 
 
 public:
+
+	int getRuntime() { return runTime; }
+	std::string getDescriptor() { return Descriptor; }
 
 	// extracts the data while checking the format
 	bool extractData(const std::string &s)
@@ -39,7 +53,7 @@ public:
 			if ( descriptor == s )
 				return false;
 		}
-		DeviceType = descriptor;
+		Descriptor = descriptor;
 
 		// check if the units are an acceptable type
 		auto temp = s.substr( s.find("{"), s.find("}:") ); //not sure why temp step is needed
@@ -47,17 +61,24 @@ public:
 		if ( units != "msec" )
 			return false;
 		// printf("%s\n", s.c_str());
-		// printf("%s\n", DeviceType.c_str());
+		// printf("%s\n", Descriptor.c_str());
 
 		// collect the runtime of the device
 		auto time = s.substr( s.find(":")+1 );
 		time.erase( remove_if(time.begin(), time.end(), isspace), time.end() );
+		if ( time.empty() )
+			return false;
 		//verify that the string only consists of digits
 		if ( !std::all_of(time.begin(), time.end(), ::isdigit) )
 			return false;
 		runTime = std::atoi( time.c_str() );
 
 		return true;
+	}
+
+	void print()
+	{
+		std::cout << "\t" << Descriptor << " = " << runTime << " ms/cycle" << std::endl;
 	}
 
 
