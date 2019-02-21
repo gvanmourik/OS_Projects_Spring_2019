@@ -1,9 +1,9 @@
 # Project 1
 
-### Prerequisites
+### Prerequisites:
 [CMake](https://cmake.org/download/) (Version >= 3.0)
 
-### Building
+### Building:
 ```
 mkdir build
 cd build
@@ -11,7 +11,7 @@ cmake ../
 make
 ```
 
-### Running
+### Running:
 Navigate to the build directory.
 
 To run the test config file:
@@ -24,17 +24,14 @@ To run other config files:
 ./bin/sim01 <file_path>
 ```
 
-### Structure
+### Structure:
 The structure of the included source files is the following:
 
-  main.cpp <- Handler.h
- Handler.h <- ConfigIO.h
-  		   <- MetaIO.h 
-ConfigIO.h <- ConfigData.h
-  MetaIO.h <- MetaData.h
+main.cpp -- Handler.h -- -- ConfigIO.h -- ConfigData.h 	<br />
+						|								<br />
+						|								<br />
+						MetaIO.h -- MetaData.h          <br />
 
-("<-" indicates a dependency)
-
-### Notes
+### Notes:
 * The log file is saved to build/
 * The test config file is located in src/
