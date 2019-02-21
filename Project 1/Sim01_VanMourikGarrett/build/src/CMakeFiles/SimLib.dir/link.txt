@@ -1,2 +1,0 @@
-/Library/Developer/CommandLineTools/usr/bin/ar qc ../lib/libSimLib.a  CMakeFiles/SimLib.dir/test.cpp.o
-/Library/Developer/CommandLineTools/usr/bin/ranlib ../lib/libSimLib.a
