@@ -1,7 +1,7 @@
 ## Files Types
 *.pdf
 *.lgf
-*.mdf
+*.txt
 
 ## Directories
 build/
