@@ -27,10 +27,13 @@ To run other config files:
 ### Structure
 The structure of the included source files is the following:
 
-main.cpp -- Handler.h -- -- ConfigIO.h -- ConfigData.h
-						|
-						|
-						MetaIO.h -- MetaData.h
+  main.cpp <- Handler.h
+ Handler.h <- ConfigIO.h
+  		   <- MetaIO.h 
+ConfigIO.h <- ConfigData.h
+  MetaIO.h <- MetaData.h
+
+("<-" indicates a dependency)
 
 ### Notes
 * The log file is saved to build/
