@@ -2,6 +2,8 @@
 *.pdf
 *.lgf
 *.txt
+*.zip
+*.tar.gz
 
 ## Directories
 build/

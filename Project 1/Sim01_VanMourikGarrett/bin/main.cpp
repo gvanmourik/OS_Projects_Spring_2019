@@ -5,11 +5,16 @@
 
 int main(int argc, char** argv)
 {
+	if (argc < 2)
+	{
+		std::cout << " No file path provided..." << std::endl;
+		return -1;
+	}
 	std::string configFilePath = argv[1];
 
 	if (argc != 2)
 	{
-		std::cout << " Please input a file name..." << std::endl;
+		std::cout << " Too many arguments provided..." << std::endl;
 	}
 	else if (configFilePath.find(".conf") == std::string::npos)
 	{

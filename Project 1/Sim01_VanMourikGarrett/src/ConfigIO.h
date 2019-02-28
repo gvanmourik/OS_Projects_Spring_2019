@@ -8,7 +8,6 @@
 #include <algorithm>
 #include <type_traits>
 
-#include "Stream.h"
 #include "ConfigData.h"
 
 #define UNASSIGNED "NAH"

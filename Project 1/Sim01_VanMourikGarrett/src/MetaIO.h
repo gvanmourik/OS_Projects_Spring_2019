@@ -7,7 +7,6 @@
 #include <iostream>
 #include <type_traits>
 
-#include "Stream.h"
 #include "ConfigData.h"
 #include "MetaData.h"
 
