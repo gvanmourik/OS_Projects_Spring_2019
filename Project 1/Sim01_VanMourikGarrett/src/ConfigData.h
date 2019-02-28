@@ -6,6 +6,7 @@
 
 #include <map>
 #include <string>
+#include <algorithm>
 #include <unordered_set>
 
 #define BOTH 	"LogtoBoth"
@@ -65,7 +66,7 @@ public:
 
 		// collect the runtime of the device
 		auto time = s.substr( s.find(":")+1 );
-		time.erase( remove_if(time.begin(), time.end(), isspace), time.end() );
+		time.erase( std::remove_if(time.begin(), time.end(), isspace), time.end() );
 		if ( time.empty() )
 			return false;
 		//verify that the string only consists of digits
