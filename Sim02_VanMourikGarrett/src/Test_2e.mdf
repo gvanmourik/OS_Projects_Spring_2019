@@ -1,0 +1,18 @@
+Start Program Meta-Data Code:
+S{begin}0; A{begin}0; P{run}11; P{run}9; P{run}12;
+P{run}9; P{run}11; P{run}8; P{run}14; P{run}14; P{run}12;
+P{run}12; P{run}6;
+P{run}8; P{run}9; P{run}6; P{run}14;
+P{run}15; P{run}12; P{run}9; P{run}6; P{run}5; A{finish}0;
+A{begin}0; P{run}6; P{run}6; P{run}9; P{run}11; P{run}13;
+P{run}14; P{run}5; P{run}7; P{run}14; P{run}15; P{run}7;
+P{run}5;      P{run}14; P{run}15; P{run}14; P{run}7; P{run}14;
+P{run}13; P{run}8; P{run}7; A{finish}0; A{begin}0; P{run}6;
+P{run}10; P{run}13; P{run}9; P{run}15; P{run}6; P{run}13;
+I{hard drive}10; I{scanner}10; I{keyboard}10;
+O{hard drive}10; O{monitor}10; O{projector}10;
+M{allocate}1; M{block}1; 
+P{run}11; P{run}5; P{run}6; P{run}7; P{run}12; P{run}11;
+P{run}6; P{run}8; P{run}10; P{run}5; P{run}8; P{run}9; P{run}7;
+A{finish}0; S{finish}0.
+End Program Meta-Data Code.
