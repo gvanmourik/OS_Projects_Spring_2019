@@ -4,5 +4,8 @@
 *.zip
 *.tar.gz
 
+## Directories
+build/
+
 ## Other
 .DS_Store

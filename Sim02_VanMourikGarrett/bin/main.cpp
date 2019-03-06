@@ -22,7 +22,6 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	//std::cout << "hello" << std::endl;
 	Handler myHandler;
 	myHandler.run(configFilePath);
 	// printf("hello world\n");
