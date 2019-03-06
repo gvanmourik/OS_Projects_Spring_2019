@@ -1,14 +1,19 @@
-# Project 1
+# Project 2
 
 ### Prerequisites:
 [CMake](https://cmake.org/download/) (Version >= 3.0)
+[Boost](https://www.boost.org/doc/libs/1_69_0/doc/html/quickbook/install.html)
 
 ### Building:
+
+To generate the makefiles and compile:
 ```
-mkdir build
-cd build
-cmake ../
-make
+./run_build
+```
+
+To remove the build files:
+```
+./remove_build
 ```
 
 ### Running:
