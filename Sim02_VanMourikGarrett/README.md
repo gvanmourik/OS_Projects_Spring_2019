@@ -2,7 +2,7 @@
 
 ### Prerequisites:
 [CMake](https://cmake.org/download/) (Version >= 3.0)
-[Boost](https://www.boost.org/doc/libs/1_69_0/doc/html/quickbook/install.html)
+<br>[Boost](https://www.boost.org/doc/libs/1_69_0/doc/html/quickbook/install.html)
 
 ### Building:
 
