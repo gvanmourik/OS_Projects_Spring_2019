@@ -16,6 +16,7 @@ class ConfigIO
 {
 private:
 	double configVer;
+	int systemMemory;
 	std::string FilePath;
 	std::string logType;
 	std::string logFilePath;
@@ -37,6 +38,7 @@ public:
 
 
 	// Access functions
+	int getSystemMemory() { return systemMemory; }
 	std::string getPath() { return FilePath; }
 	std::string getLogType() { return logType; }
 	std::string getLogPath() { return logFilePath; }
@@ -119,6 +121,9 @@ public:
 				[](const char c){ return c == '{'; } );
 			while ( !endOfConfigData )
 			{
+				//debug
+				// std::cout << currentStr << std::endl;
+
 				if ( !lineData.extractData(currentStr) )
 				{
 					errlog.push_back(" ERROR: Config file not formatted correctly! {in config data}\n");
@@ -128,20 +133,26 @@ public:
 				// lineData.print();
 				// add to file data
 				FileData.push_back(lineData);
-				
+
+				// set system memory
+				if ( lineData.getDescriptor() == "System memory" )
+					systemMemory = lineData.getValue();
+
 				// recover descriptor
 				auto Descriptor = lineData.getDescriptor();
-				// clean up descriptor string
+				// clean up descriptor string (tolower and then remove white space)
 				std::transform(Descriptor.begin(), Descriptor.end(), Descriptor.begin(), ::tolower);
 				Descriptor.erase( remove_if(Descriptor.begin(), Descriptor.end(), isspace), Descriptor.end() );
 				// add descriptor to key
-				RuntimeKey[Descriptor] = lineData.getRuntime();
+				RuntimeKey[Descriptor] = lineData.getValue();
 				
 				std::getline(configFile, currentStr); //next line
 				lineStart = currentStr.substr( 0, currentStr.find(":") );
 				endOfConfigData = !std::any_of( lineStart.begin(), lineStart.end(), 
 					[](char c){ return c == '{'; } );
 			}
+
+
 
 			// Collect log file and path
 			lineStart = currentStr.substr(0, currentStr.find(":"));

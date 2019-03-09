@@ -5,24 +5,54 @@
 #include <sstream>
 #include <fstream>
 #include <iostream>
+#include <pthread.h>
+#include <semaphore.h>
 #include <type_traits>
+#include <sys/time.h>
+#include <boost/random.hpp>
+#include <boost/random/uniform_int_distribution.hpp>
 
+#include "PCB.h"
+#include "Timer.h"
 #include "ConfigData.h"
 #include "MetaData.h"
 
 #define UNASSIGNED "NAH"
 
+typedef void * (*thread_func_ptr)(void *);
+
+// void* wait_thread(void* delay)
+// {
+
+// }
+
 class MetaIO 
 {
 private:
 	bool startFlag = false;
+	bool systemStartFlag = false;
+	bool appStartFlag = false;
+	int systemMemory;
+	int processCount = 0;
+	Timer timer;
 	std::string FilePath;
 	std::vector<MetaData> FileData;
+	process_map_t PCBlocks;
+	runtime_key_t rtKey;
+
+	//multithreading
+	void* time_ptr;
+	pthread_t thread;
+	pthread_mutex_t mutex;
+	sem_t* semaphore;
+	unsigned int semValue;
+	const char* semName = "sem";
 
 
 public:
 	/// Constructors
-	MetaIO(std::string _filePath) : FilePath(_filePath){}
+	MetaIO(std::string _filePath, int _systemMemory, runtime_key_t _rtKey) : 
+		FilePath(_filePath), rtKey(_rtKey), systemMemory(_systemMemory){}
 	~MetaIO(){}
 
 
@@ -33,7 +63,10 @@ public:
 	// Other functions
 	bool readFile(std::vector<std::string> &errlog)
 	{
-		// std::cout << "in read file..." << std::endl;
+		//init pthread and semaphore
+		pthread_mutex_init(&mutex, nullptr);
+		semaphore = sem_open(semName, O_CREAT | O_EXCL, 0644, semValue);
+		sem_unlink(semName);
 
 		std::string currentStr;
 		std::ifstream metaFile(FilePath);
@@ -46,6 +79,7 @@ public:
 		if ( metaFile.is_open() )
 		{
 			// std::cout << "file is open..." << std::endl;
+			// std::cout << "Meta-Data Metrics:" << std::endl;
 			if ( !readline(metaFile, currentStr) )
 			{
 				errlog.push_back(" ERROR: Meta-data file not formatted correctly! {start/end section}\n");
@@ -55,7 +89,9 @@ public:
 			MetaData lineData;
 			std::string dataStr;
 			
-			// Collect meta-data
+			/// Collect meta-data
+			//start timer
+			timer.start();
 			if ( !readline(metaFile, currentStr) )
 			{
 				errlog.push_back(" ERROR: Meta-data file not formatted correctly! {start/end section}\n");
@@ -64,6 +100,9 @@ public:
 			bool lastMetaDataLine;
 			if ( *(currentStr.end()-1) == '.' )
 				lastMetaDataLine = true;
+			
+			//lock thread
+			pthread_mutex_lock(&mutex);
 			
 			while ( !lastMetaDataLine )
 			{
@@ -78,6 +117,21 @@ public:
 						return false;
 					}
 					// lineData->print();
+					if ( !checkFlags(lineData) )
+					{
+						errlog.push_back(" ERROR: Application begin/finish not configured correctly!\n");
+						return false;
+					}
+					if ( lineData.getType() == "A" && lineData.getDescriptor() == "begin" )
+					{
+						processCount++;
+						PCBlocks[processCount] = new PCB(processCount);
+					}
+					if ( lineData.getType() == "A" && lineData.getDescriptor() == "finish" )
+					{
+						PCBlocks[processCount]->setState(EXIT);
+					}
+					printLine(processCount, lineData, rtKey);
 					FileData.push_back(lineData);
 			    }
 
@@ -105,8 +159,30 @@ public:
 					errlog.push_back(" ERROR: File not formatted correctly! {in meta-data}\n");
 					return false;
 				}
+				if ( !checkFlags(lineData) )
+				{
+					errlog.push_back(" ERROR: Application begin/finish not configured correctly!\n");
+					return false;
+				}
+				if ( lineData.getType() == "A" && lineData.getDescriptor() == "begin" )
+				{
+					processCount++;
+					PCBlocks[processCount] = new PCB(processCount);
+				}
+				if ( lineData.getType() == "A" && lineData.getDescriptor() == "finish" )
+				{
+					PCBlocks[processCount]->setState(EXIT);
+				}
+				printLine(processCount, lineData, rtKey);
 				FileData.push_back(lineData);
 		    }
+
+		    //unlock thread
+			pthread_mutex_unlock(&mutex);
+
+		    std::cout << std::endl;
+		    if ( !finalFlagCheck(errlog) )
+		    	return false;
 
 		    if ( !readline(metaFile, currentStr) )
 			{
@@ -154,79 +230,377 @@ public:
 		return true;
 	}
 
+	bool checkFlags(MetaData &lineData)
+	{
+		if ( lineData.getType() == "S" )
+		{
+			if (!systemStartFlag && lineData.getDescriptor() == "begin")
+			{
+				systemStartFlag = true;
+				return true;
+			}
+			if (systemStartFlag && lineData.getDescriptor() == "finish")
+			{
+				systemStartFlag = false;
+				return true;
+			}
+			return false;
+		}
+		if ( lineData.getType() == "A" )
+		{
+			if (!appStartFlag && lineData.getDescriptor() == "begin")
+			{
+				appStartFlag = true;
+				return true;
+			}
+			if (appStartFlag && lineData.getDescriptor() == "finish")
+			{
+				appStartFlag = false;
+				return true;
+			}
+			return false;
+		}
+		//make sure that both the system and application have been started before
+		// processing any other input
+		else
+		{
+			if (!systemStartFlag || !appStartFlag)
+				return false;
+		}
+		return true;
+	}
+
+	bool finalFlagCheck(std::vector<std::string> &errlog)
+	{
+		if ( appStartFlag )
+	    {
+	    	errlog.push_back(" ERROR: Application begin/finish not configured correctly!\n");
+			return false;
+	    }
+	    if ( systemStartFlag )
+	    {
+	    	errlog.push_back(" ERROR: System begin/finish not configured correctly!\n");
+			return false;
+	    }
+	    return true;
+	}
+
 	void print(runtime_key_t RTKey)
 	{
 		std::cout << "Meta-Data Metrics:" << std::endl;
-		for (auto metaLineData : FileData)
+		for (auto MD : FileData)
 		{
 			int runtime;
-			if ( metaLineData.getType() == "S" )
+			if ( MD.getType() == "S" )
 			{
-				metaLineData.print(0);
+				MD.print(0);
 			}
-			if ( metaLineData.getType() == "A" )
+			if ( MD.getType() == "A" )
 			{
-				metaLineData.print(0);
+				MD.print(0);
 			}
-			if ( metaLineData.getType() == "P" )
+			if ( MD.getType() == "P" )
 			{
-				if ( metaLineData.getDescriptor() == "run" )
+				if ( MD.getDescriptor() == "run" )
 				{
 					// printf("test2\n");
 					runtime = RTKey["processor"];
-					metaLineData.print(runtime);
+					MD.print(runtime);
 				}
 			}	
-			if ( metaLineData.getType() == "I" )
+			if ( MD.getType() == "I" )
 			{
 				// printf("test1\n");
-				// std::cout << metaLineData.getDescriptor() << std::endl;
+				// std::cout << MD.getDescriptor() << std::endl;
 				// int time;
-				if ( metaLineData.getDescriptor() == "harddrive" )
+				if ( MD.getDescriptor() == "harddrive" )
 				{
 					// printf("test2\n");
 					runtime = RTKey["harddrive"];
-					metaLineData.print(runtime);
+					MD.print(runtime);
 				}
-				if ( metaLineData.getDescriptor() == "scanner" )
+				if ( MD.getDescriptor() == "scanner" )
 				{
 					runtime = RTKey["scanner"];
-					metaLineData.print(runtime);
+					MD.print(runtime);
 				}
-				if ( metaLineData.getDescriptor() == "keyboard" )
+				if ( MD.getDescriptor() == "keyboard" )
 				{
 					runtime = RTKey["keyboard"];
-					metaLineData.print(runtime);
+					MD.print(runtime);
 				}
 			}
-			if ( metaLineData.getType() == "O" )
+			if ( MD.getType() == "O" )
 			{
 				// printf("test1\n");
-				// std::cout << metaLineData.getDescriptor() << std::endl;
-				if ( metaLineData.getDescriptor() == "harddrive" )
+				// std::cout << MD.getDescriptor() << std::endl;
+				if ( MD.getDescriptor() == "harddrive" )
 				{
 					// printf("test2\n");
 					runtime = RTKey["harddrive"];
-					metaLineData.print(runtime);
+					MD.print(runtime);
 				}
-				if ( metaLineData.getDescriptor() == "monitor" )
+				if ( MD.getDescriptor() == "monitor" )
 				{
 					runtime = RTKey["monitor"];
-					metaLineData.print(runtime);
+					MD.print(runtime);
 				}
-				if ( metaLineData.getDescriptor() == "projector" )
+				if ( MD.getDescriptor() == "projector" )
 				{
 					runtime = RTKey["projector"];
-					metaLineData.print(runtime);
+					MD.print(runtime);
 				}
 			}
-			if ( metaLineData.getType() == "M" )
+			if ( MD.getType() == "M" )
 			{
 				runtime = RTKey["memory"];
-				metaLineData.print(runtime);
+				MD.print(runtime);
 			}
 
 		}
+	}
+
+	bool printLine(int processID, MetaData &MD, runtime_key_t RTKey)
+	{
+		double runtime, cycles, waitTime;
+
+		//system
+		if ( MD.getType() == "S" )
+		{	
+			if ( MD.getDescriptor() == "begin" )
+			{
+				std::cout << getTimeString() << " -- Simulator program starting" << std::endl;
+			}
+			if ( MD.getDescriptor() == "finish" )
+			{
+				std::cout << getTimeString() << " -- Simulator program ending" << std::endl;
+			}
+			return true;
+		}
+
+		// application
+		if ( MD.getType() == "A" )
+		{
+			if ( MD.getDescriptor() == "begin" )
+			{
+				std::cout << getTimeString() << " -- OS: preparing process " << processID << std::endl;
+				std::cout << getTimeString() << " -- OS: starting process " << processID << std::endl;
+			}
+			if ( MD.getDescriptor() == "finish" )
+			{
+				std::cout << getTimeString() << " -- OS: removing process " << processID << std::endl;
+			}
+			return true;
+		}
+
+		std::string processorName = " -- Process " + std::to_string(processID) + ": ";
+		if ( MD.getType() == "P" )
+		{
+			//set process state
+			PCBlocks[processCount]->setState(READY);
+			
+			if ( MD.getDescriptor() == "run" )
+			{
+				runtime = RTKey["processor"];
+				cycles = (double)MD.getCycles();
+
+				std::cout << getTimeString() << processorName << "start processing action" << std::endl;
+				wait(runtime * cycles);
+				PCBlocks[processCount]->setState(RUNNING); //part of the system
+				std::cout << getTimeString() << processorName << "end processing action" << std::endl;
+			}
+			PCBlocks[processCount]->setState(READY);
+		}
+		//input operation	
+		if ( MD.getType() == "I" )
+		{
+			//set process state
+			PCBlocks[processCount]->setState(READY);
+
+			if ( MD.getDescriptor() == "harddrive" )
+			{
+				runtime = RTKey["harddrive"];
+				cycles = (double)MD.getCycles();
+				waitTime = runtime * cycles;
+
+				sem_wait(semaphore);
+				std::cout << getTimeString() << processorName << "start hard drive input" << std::endl;
+				pthread_create(&thread, nullptr, (thread_func_ptr)&MetaIO::wait_thread, (void*)&waitTime);
+				PCBlocks[processCount]->setState(RUNNING);
+				PCBlocks[processCount]->setState(WAIT);
+				std::cout << getTimeString() << processorName << "end hard drive input" << std::endl;
+				sem_post(semaphore);
+			}
+			if ( MD.getDescriptor() == "scanner" )
+			{
+				runtime = RTKey["scanner"];
+				cycles = (double)MD.getCycles();
+				waitTime = runtime * cycles;
+				// MD.print(runtime);
+
+				sem_wait(semaphore);
+				std::cout << getTimeString() << processorName << "start scanner input" << std::endl;
+				pthread_create(&thread, nullptr, (thread_func_ptr)&MetaIO::wait_thread, (void*)&waitTime);
+				PCBlocks[processCount]->setState(RUNNING);
+				PCBlocks[processCount]->setState(WAIT);
+				std::cout << getTimeString() << processorName << "end scanner input" << std::endl;
+				sem_post(semaphore);
+			}
+			if ( MD.getDescriptor() == "keyboard" )
+			{
+				runtime = RTKey["keyboard"];
+				cycles = (double)MD.getCycles();
+				waitTime = runtime * cycles;
+				// MD.print(runtime);
+
+				sem_wait(semaphore);
+				std::cout << getTimeString() << processorName << "start keyboard input" << std::endl;
+				pthread_create(&thread, nullptr, (thread_func_ptr)&MetaIO::wait_thread, (void*)&waitTime);
+				PCBlocks[processCount]->setState(RUNNING);
+				PCBlocks[processCount]->setState(WAIT);
+				std::cout << getTimeString() << processorName << "end keyboard input" << std::endl;
+				sem_post(semaphore);
+			}
+			PCBlocks[processCount]->setState(READY);
+		}
+		//output operation
+		if ( MD.getType() == "O" )
+		{
+			//set process state
+			PCBlocks[processCount]->setState(READY);
+
+			if ( MD.getDescriptor() == "harddrive" )
+			{
+				// printf("test2\n");
+				runtime = RTKey["harddrive"];
+				cycles = (double)MD.getCycles();
+				waitTime = runtime * cycles;
+				// MD.print(runtime);
+
+				sem_wait(semaphore);
+				std::cout << getTimeString() << processorName << "start hard drive output" << std::endl;
+				pthread_create(&thread, nullptr, (thread_func_ptr)&MetaIO::wait_thread, (void*)&waitTime);
+				PCBlocks[processCount]->setState(RUNNING);
+				PCBlocks[processCount]->setState(WAIT);
+				std::cout << getTimeString() << processorName << "end hard drive output" << std::endl;
+				sem_post(semaphore);
+			}
+			if ( MD.getDescriptor() == "monitor" )
+			{
+				runtime = RTKey["monitor"];
+				cycles = (double)MD.getCycles();
+				waitTime = runtime * cycles;
+				// MD.print(runtime);
+
+				sem_wait(semaphore);
+				std::cout << getTimeString() << processorName << "start monitor output" << std::endl;
+				pthread_create(&thread, nullptr, (thread_func_ptr)&MetaIO::wait_thread, (void*)&waitTime);
+				PCBlocks[processCount]->setState(RUNNING);
+				PCBlocks[processCount]->setState(WAIT);
+				std::cout << getTimeString() << processorName << "end monitor output" << std::endl;
+				sem_post(semaphore);
+			}
+			if ( MD.getDescriptor() == "projector" )
+			{
+				runtime = RTKey["projector"];
+				cycles = (double)MD.getCycles();
+				waitTime = runtime * cycles;
+				// MD.print(runtime);
+
+				sem_wait(semaphore);
+				std::cout << getTimeString() << processorName << "start projector output" << std::endl;
+				pthread_create(&thread, nullptr, (thread_func_ptr)&MetaIO::wait_thread, (void*)&waitTime);
+				PCBlocks[processCount]->setState(RUNNING);
+				PCBlocks[processCount]->setState(WAIT);
+				std::cout << getTimeString() << processorName << "end projector output" << std::endl;
+				sem_post(semaphore);
+			}
+			PCBlocks[processCount]->setState(READY);
+		}
+		if ( MD.getType() == "M" )
+		{
+			//set process state
+			PCBlocks[processCount]->setState(READY);
+
+			runtime = RTKey["memory"];
+			cycles = (double)MD.getCycles();
+			// MD.print(runtime);
+
+			if ( MD.getDescriptor() == "allocate" )
+			{
+				std::cout << getTimeString() << processorName << "allocating memory" << std::endl;
+				wait(runtime * cycles);
+				PCBlocks[processCount]->setState(RUNNING);
+				std::cout << getTimeString() << processorName << "memory allocated at 0x" << allocateMemory() << std::endl;
+			}
+			if ( MD.getDescriptor() == "block" )
+			{
+				std::cout << getTimeString() << processorName << "start memory blocking" << std::endl;
+				wait(runtime * cycles);
+				PCBlocks[processCount]->setState(RUNNING);
+				std::cout << getTimeString() << processorName << "end memory blocking" << std::endl;
+			}
+			PCBlocks[processCount]->setState(READY);
+		}
+		return true;
+	}
+
+	std::string allocateMemory()
+	{
+		// auto max = std::round(systemMemory);
+		// std::cout << "max = " << max << std::endl;
+
+		timeval t;
+	 	gettimeofday(&t, nullptr);
+	  	boost::mt19937 seed( (int)t.tv_usec );
+		boost::random::uniform_int_distribution<> dist(0, std::round(systemMemory));
+		boost::variate_generator<boost::mt19937&, boost::random::uniform_int_distribution<> > random(seed, dist);
+		
+		std::stringstream ss;
+		auto temp = random();
+		ss << std::hex << temp;
+
+		int numBits = 8;
+		auto memString = ss.str();
+		if ( memString.length() < numBits )
+		{
+			auto addBits = numBits - memString.length();
+			for (int i=0; i < addBits; ++i)
+			{
+				memString = "0" + memString;
+			}
+		}
+
+
+		return memString;
+	}
+
+	void wait(double delayTime)
+	{
+		while ( timer.mSec() < delayTime ){}
+	}
+
+	static void* wait_thread(void* delayTime)
+	{
+		Timer timer;
+		timer.start();
+		auto initialTime = timer.uSec();
+		auto finalTime = initialTime;
+		auto elapsedTime = finalTime - initialTime;
+
+		//wait
+		while ( elapsedTime < *(double*)delayTime )
+		{
+			finalTime = timer.uSec();
+			elapsedTime = finalTime - initialTime;
+		}
+		return nullptr;
+	}
+
+	std::string getTimeString()
+	{
+		double long time = timer.uSec();
+		return std::to_string(time);
 	}
 
 };

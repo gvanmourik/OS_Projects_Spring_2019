@@ -22,7 +22,7 @@ public:
 	/// Access funcitons
 	std::string getType() { return OpType; }
 	std::string getDescriptor() { return Descriptor; }
-	unsigned int getCycles() { return Cycles; }
+	int getCycles() { return Cycles; }
 
 
 	/// Other functions

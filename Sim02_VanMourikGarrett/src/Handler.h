@@ -1,5 +1,5 @@
-#ifndef HANDLER
-#define HANDLER
+#ifndef HANDLER_H
+#define HANDLER_H
 
 #include <string>
 #include <vector>
@@ -8,16 +8,19 @@
 #include "MetaIO.h"
 #include "ConfigIO.h"
 
+
 class Handler 
 {
 private:
 
 
 public:
+
 	bool run(std::string configPath)
 	{
 		std::vector<std::string> errorLog;
 
+		/// CONFIG
 		ConfigIO config_handler(configPath);
 		
 		if ( !config_handler.readFile(errorLog) )
@@ -34,7 +37,12 @@ public:
 		std::string metaDataPath;
 		if ( !config_handler.getMetaPath(metaDataPath) )
 			return false;
-		MetaIO meta_handler("../src/" + metaDataPath);
+
+
+		/// META
+		MetaIO meta_handler("src/" + metaDataPath, 
+							config_handler.getSystemMemory(), 
+							config_handler.getRuntimeKey());
 
 		// std::cout <<"before readfile"<<std::endl;
 		if ( !meta_handler.readFile(errorLog) )
@@ -47,15 +55,6 @@ public:
 			std::cout << " --> exited with meta handler error" << std::endl;
 			exit(EXIT_FAILURE);
 		}
-		// std::cout <<"after readfile"<<std::endl;
-
-		// auto logFilePath = config_handler.get
-		// config_handler.outputData();
-
-		// std::cout << oss.str();
-
-		config_handler.print();
-		meta_handler.print(config_handler.getRuntimeKey());
 
 		return true;
 	}
@@ -88,4 +87,4 @@ public:
 };
 
 
-#endif /* HANDLER */
+#endif /* HANDLER_H */

@@ -22,8 +22,8 @@ int main(int argc, char** argv)
 		exit(EXIT_FAILURE);
 	}
 
-	Handler myHandler;
-	myHandler.run(configFilePath);
+	Handler handler;
+	handler.run(configFilePath);
 	// printf("hello world\n");
 
 
