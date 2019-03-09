@@ -20,14 +20,8 @@
 #include "ConfigData.h"
 #include "MetaData.h"
 
-#define UNASSIGNED "NAH"
-
 typedef void * (*thread_func_ptr)(void *);
 
-// void* wait_thread(void* delay)
-// {
-
-// }
 
 class MetaIO 
 {
