@@ -27,5 +27,7 @@ else()
 	message(STATUS "Boost NOT found...install Boost and try again!")
 endif()
 
+find_package(Threads REQUIRED)
+
 add_subdirectory(bin)
 add_subdirectory(src)
