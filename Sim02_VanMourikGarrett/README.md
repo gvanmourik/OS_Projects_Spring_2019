@@ -1,10 +1,10 @@
 # Project 2
 
-### Prerequisites:
+## Prerequisites:
 [CMake](https://cmake.org/download/) (Version >= 3.0)
 <br>[Boost](https://www.boost.org/doc/libs/1_69_0/doc/html/quickbook/install.html) (Mac OS X, Windows, Debian, and Ubuntu)
 
-### Building:
+## Building:
 
 To generate the makefiles and compile:
 ```
@@ -16,7 +16,7 @@ To remove the build files:
 ./remove_build
 ```
 
-### Running:
+## Running:
 Navigate to the build directory.
 
 To run the test config file:
@@ -29,9 +29,9 @@ To run other config files:
 ./bin/sim02 <file_path>
 ```
 
-### Key Lines (PCB and Threads)
+## Key Lines (PCB and Threads)
 
-#### Process Control Block (PCB)
+### Process Control Block (PCB)
 **Defined in src/PCB.h**
 
 **Created at:**
@@ -45,7 +45,7 @@ MetaIO.h [lines 171, 397, 409, 415, 426, 427, 441, 442, 456, 457, 461, 467, 480,
 PCBlocks[processCount]->setState(<state>);
 ```
 
-#### Threads
+### Threads
 **Used in src/MetaIO.h**
 
 **Variables [lines 42-46]**
