@@ -4,6 +4,7 @@
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include <unistd.h>
 #include <iostream>
 #include <pthread.h>
 #include <semaphore.h>
@@ -69,7 +70,7 @@ public:
 		std::ifstream metaFile(FilePath);
 		if (metaFile.peek() == std::ifstream::traits_type::eof())
 		{
-			errlog.push_back(" ERROR: Meta-Data file is empty!\n");
+			errlog.push_back(" ERROR: Meta-Data file is empty or does not exist!\n");
 			return false;
 		}
 

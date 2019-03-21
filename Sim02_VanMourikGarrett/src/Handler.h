@@ -40,7 +40,7 @@ public:
 
 
 		/// META
-		MetaIO meta_handler("src/" + metaDataPath, 
+		MetaIO meta_handler("../src/" + metaDataPath, 
 							config_handler.getSystemMemory(), 
 							config_handler.getRuntimeKey());
 

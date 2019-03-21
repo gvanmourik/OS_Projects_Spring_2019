@@ -6,6 +6,7 @@
 
 ## Directories
 build/
+bin/CMakeFiles/
 
 ## Other
 .DS_Store

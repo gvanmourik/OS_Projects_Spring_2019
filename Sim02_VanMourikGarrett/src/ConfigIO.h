@@ -62,7 +62,7 @@ public:
 		std::ifstream configFile(FilePath);
 		if (configFile.peek() == std::ifstream::traits_type::eof())
 		{
-			errlog.push_back(" ERROR: Config file is empty!\n");
+			errlog.push_back(" ERROR: Config file is empty or does not exist!\n");
 			return false;
 		}
 
