@@ -1,0 +1,12 @@
+## Files Types
+*.pdf
+*.lgf
+*.zip
+*.tar.gz
+
+## Directories
+build/
+bin/CMakeFiles/
+
+## Other
+.DS_Store
