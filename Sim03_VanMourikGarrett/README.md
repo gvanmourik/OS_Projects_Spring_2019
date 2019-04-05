@@ -1,7 +1,7 @@
-# Project 2
+# Project 3
 
 ## Prerequisites:
-[CMake](https://cmake.org/download/) (Version >= 3.0)
+[CMake](https://cmake.org/download/) (Version >= 3.5.1)
 <br>[Boost](https://www.boost.org/doc/libs/1_69_0/doc/html/quickbook/install.html) (Mac OS X, Windows, Debian, and Ubuntu)
 
 ## Building:
@@ -21,12 +21,12 @@ Navigate to the build directory.
 
 To run the test config file:
 ```
-./bin/sim02 ../src/testConfig.conf
+./bin/sim03 ../src/testConfig.conf
 ```
 
 To run other config files:
 ```
-./bin/sim02 <file_path>
+./bin/sim03 <file_path>
 ```
 
 ## Key Lines (PCB and Threads)
