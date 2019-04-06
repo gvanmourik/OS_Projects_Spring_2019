@@ -16,7 +16,8 @@ class ConfigIO
 {
 private:
 	double configVer;
-	int systemMemory;
+	int sysMemory;
+	int sysMemorySize;
 	std::string FilePath;
 	std::string logType;
 	std::string logFilePath;
@@ -38,7 +39,8 @@ public:
 
 
 	// Access functions
-	int getSystemMemory() { return systemMemory; }
+	int getSysMemory() { return sysMemory; }
+	int getSysMemorySize() { return sysMemorySize; }
 	std::string getPath() { return FilePath; }
 	std::string getLogType() { return logType; }
 	std::string getLogPath() { return logFilePath; }
@@ -122,7 +124,7 @@ public:
 			while ( !endOfConfigData )
 			{
 				//debug
-				// std::cout << currentStr << std::endl;
+				std::cout << currentStr << std::endl;
 
 				if ( !lineData.extractData(currentStr) )
 				{
@@ -136,7 +138,15 @@ public:
 
 				// set system memory
 				if ( lineData.getDescriptor() == "System memory" )
-					systemMemory = lineData.getValue();
+				{
+					sysMemory = lineData.getValue();
+				}
+
+				// set system memory block size
+				if ( lineData.getDescriptor() == "Memory block size" )
+				{
+					sysMemorySize = lineData.getValue();
+				}
 
 				// recover descriptor
 				auto Descriptor = lineData.getDescriptor();

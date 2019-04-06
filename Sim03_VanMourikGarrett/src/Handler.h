@@ -41,7 +41,8 @@ public:
 
 		/// META
 		MetaIO meta_handler("../src/" + metaDataPath, 
-							config_handler.getSystemMemory(), 
+							config_handler.getSysMemory(),
+							config_handler.getSysMemorySize(), 
 							config_handler.getRuntimeKey());
 
 		// std::cout <<"before readfile"<<std::endl;

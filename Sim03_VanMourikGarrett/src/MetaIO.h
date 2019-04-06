@@ -30,7 +30,9 @@ private:
 	bool startFlag = false;
 	bool systemStartFlag = false;
 	bool appStartFlag = false;
-	int systemMemory;
+	int sysMemory;
+	int sysMemorySize;
+	int sysMemLocation = 0;
 	int processCount = 0;
 	Timer timer;
 	std::string FilePath;
@@ -49,8 +51,8 @@ private:
 
 public:
 	/// Constructors
-	MetaIO(std::string _filePath, int _systemMemory, runtime_key_t _rtKey) : 
-		FilePath(_filePath), rtKey(_rtKey), systemMemory(_systemMemory){}
+	MetaIO(std::string _filePath, int memory, int memorySize, runtime_key_t _rtKey) : 
+		FilePath(_filePath), sysMemory(memory), sysMemorySize(memorySize), rtKey(_rtKey){}
 	~MetaIO(){}
 
 
@@ -562,20 +564,20 @@ public:
 	}
 
 	std::string allocateMemory()
-	{
-		// auto max = std::round(systemMemory);
-		// std::cout << "max = " << max << std::endl;
-
-		timeval t;
-	 	gettimeofday(&t, nullptr);
-	  	boost::mt19937 seed( (int)t.tv_usec );
-		boost::random::uniform_int_distribution<> dist(0, std::round(systemMemory));
-		boost::variate_generator<boost::mt19937&, boost::random::uniform_int_distribution<> > random(seed, dist);
-		
+	{		
+		int memAddress;
 		std::stringstream ss;
-		auto temp = random();
+
+		//get new mem location
+		sysMemLocation %= sysMemory;
+		memAddress = sysMemLocation;
+		sysMemLocation += sysMemorySize;
+
+		//convert to hex
+		auto temp = memAddress;
 		ss << std::hex << temp;
 
+		//format output string
 		int numBits = 8;
 		auto memString = ss.str();
 		if ( memString.length() < numBits )
@@ -586,7 +588,6 @@ public:
 				memString = "0" + memString;
 			}
 		}
-
 
 		return memString;
 	}
@@ -616,23 +617,6 @@ public:
 	}
 
 };
-
-
-/// Example meta-data file:
-	// 1 Start Program Meta-Data Code:
-	// 2 S{begin}0; A{begin}0; P{run}11; P{run}9; P{run}12;
-	// 3 P{run}9; P{run}11; P({run}8; P{run}14; P{run}14; P{run}12;
-	// 4 P{run}12; P{run}6; P{run}8; P{run}9; P{run}6; P{run}14;
-	// 5 P{run}15; P{run}12; P{run}9; P{run}6; P{run}5; A{finish}0;
-	// 6 A{begin}0; P{run}6; P{run}6; P{run}9; P{run}11; P{run}13;
-	// 7 P{run}14; P{run}5; P{run}7; P{run}14; P{run}15; P{run}7;
-	// 8 P{run}5; P{run}14; P{run}15; P{run}14; P{run}7; P{run}14;
-	// 9 P{run}13; P{run}8; P{run}7; A{finish}0; A{begin}0; P{run}6;
-	// 10 P{run}10; P{run}13; P{run}9; P{run}15; P{run}6; P{run}13;
-	// 11 P{run}11; P{run}5; P{run}6; P{run}7; P{run}12; P{run}11;
-	// 12 P{run}6; P{run}8; P{run}10; P{run}5; P{run}8; P{run}9; P{run}7;
-	// 13 A{finish}0; S{finish}0.
-	// 14 End Program Meta-Data Code.
 
 
 #endif /* META_IO */

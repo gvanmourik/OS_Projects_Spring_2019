@@ -50,7 +50,7 @@ public:
 		//debug
 		// std::cout << "Before descriptor..." << std::endl;
 	
-  		if ( !getDescriptor(s, Descriptor) )
+  		if ( !checkDescriptor(s, Descriptor) )
   			return false;
 		// Descriptor = descriptor;
 
@@ -88,43 +88,60 @@ public:
 		return true;
 	}
 
-	bool getDescriptor(const std::string &s, std::string &d)
+	bool checkDescriptor(const std::string &s, std::string &d)
 	{
 		//debug
 		// std::cout << "Before format check..." << std::endl;
+		
+		bool cycle_time = s.find(" cycle time {") != std::string::npos;
+		bool display_time = s.find(" display time {") != std::string::npos;
+		bool sys_memory = s.find("System memory") != std::string::npos;
+		bool sys_memory_size = s.find("Memory block size") != std::string::npos;
 
-		if ( !(s.find(" cycle time {") != std::string::npos ||
-			   s.find(" display time {") != std::string::npos ||
-			   s.find("System memory") != std::string::npos) )
+		if ( !(cycle_time 		||
+			   display_time 	||
+			   sys_memory 		||
+			   sys_memory_size 
+			   ))
 		{ return false; }
 
 		//debug
 		// std::cout << "After format check..." << std::endl;
 
 		bool descriptorSet = false;
+		bool isMemorySpec = true;
 		std::string descriptor;
 
-		descriptor = s.substr( 0, s.find(" cycle time {") );
-		if ( descriptor != s )
-		{
-			d = descriptor;
-			descriptorSet = true;
-		}
-		descriptor = s.substr( 0, s.find(" display time {") );
-		if ( descriptor != s )
-		{
-			d = descriptor;
-			descriptorSet = true;
-		}
-		if ( !descriptorSet )
-		{
-			d = "System memory";
-		}
+		if ( cycle_time )
+			setDescriptor(d, s, descriptorSet, !isMemorySpec, " cycle time {");
+		if ( display_time )
+			setDescriptor(d, s, descriptorSet, !isMemorySpec, " display time {");
+		if ( sys_memory )
+			setDescriptor(d, s, descriptorSet, isMemorySpec, "System memory");
+		if ( sys_memory_size )
+			setDescriptor(d, s, descriptorSet, isMemorySpec, "Memory block size");
+
+		// descriptor = s.substr( 0, s.find(" cycle time {") );
+		// if ( descriptor != s )
+		// {
+		// 	d = descriptor;
+		// 	descriptorSet = true;
+		// }
+		// descriptor = s.substr( 0, s.find(" display time {") );
+		// if ( descriptor != s )
+		// {
+		// 	d = descriptor;
+		// 	descriptorSet = true;
+		// }
+		// if ( !descriptorSet )
+		// {
+		// 	d = s;
+		// }
 
 		//debug
 		// std::cout << "After descriptor assignment..." << std::endl;
 
-		return true;
+		return descriptorSet;
 	}
 
 	void convert()
@@ -138,6 +155,24 @@ public:
 			runTimeValue *= 1e6;
 		}
 		units = "kbytes";
+	}
+
+	void setDescriptor(std::string &d, const std::string &s, bool &descriptorSet, bool isMemorySpec, std::string search)
+	{
+		if ( !isMemorySpec )
+		{
+			std::string descriptor = s.substr( 0, s.find(search) );
+			if ( descriptor != s )
+			{
+				d = descriptor;
+				descriptorSet = true;
+			}
+		}
+		else
+		{
+			d = search;
+			descriptorSet = true;
+		}
 	}
 
 	void print()
