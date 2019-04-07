@@ -444,7 +444,7 @@ public:
 				}
 				
 				/******************************** CRITICAL ZONE ********************************/
-				sem_wait(semaphore);
+				// sem_wait(semaphore);
 				pthread_mutex_lock(&mutex);
 
 				if ( resourceNumber != NO_LIMIT )
@@ -458,7 +458,7 @@ public:
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end hard drive input" << std::endl;
-				sem_post(semaphore);
+				// sem_post(semaphore);
 				/****************************** END CRITICAL ZONE ******************************/
 			}
 			if ( MD.getDescriptor() == "scanner" )
@@ -483,7 +483,7 @@ public:
 				}
 
 				/******************************** CRITICAL ZONE ********************************/
-				sem_wait(semaphore);
+				// sem_wait(semaphore);
 				pthread_mutex_lock(&mutex);
 				
 				if ( resourceNumber != NO_LIMIT )
@@ -497,7 +497,7 @@ public:
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end scanner input" << std::endl;
-				sem_post(semaphore);
+				// sem_post(semaphore);
 				/****************************** END CRITICAL ZONE ******************************/
 			}
 			if ( MD.getDescriptor() == "keyboard" )
@@ -522,7 +522,7 @@ public:
 				}
 
 				/******************************** CRITICAL ZONE ********************************/
-				sem_wait(semaphore);
+				// sem_wait(semaphore);
 				pthread_mutex_lock(&mutex);
 
 				if ( resourceNumber != NO_LIMIT )
@@ -536,7 +536,7 @@ public:
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end keyboard input" << std::endl;
-				sem_post(semaphore);
+				// sem_post(semaphore);
 				/****************************** END CRITICAL ZONE ******************************/
 			}
 			PCBlocks[processCount]->setState(READY);
@@ -570,7 +570,7 @@ public:
 				}
 
 				/******************************** CRITICAL ZONE ********************************/
-				sem_wait(semaphore);
+				// sem_wait(semaphore);
 				pthread_mutex_lock(&mutex);
 
 				if ( resourceNumber != NO_LIMIT )
@@ -584,7 +584,7 @@ public:
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end hard drive output" << std::endl;
-				sem_post(semaphore);
+				// sem_post(semaphore);
 				/****************************** END CRITICAL ZONE ******************************/
 			}
 			if ( MD.getDescriptor() == "monitor" )
@@ -609,7 +609,7 @@ public:
 				}
 
 				/******************************** CRITICAL ZONE ********************************/
-				sem_wait(semaphore);
+				// sem_wait(semaphore);
 				pthread_mutex_lock(&mutex);
 
 				if ( resourceNumber != NO_LIMIT )
@@ -623,7 +623,7 @@ public:
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end monitor output" << std::endl;
-				sem_post(semaphore);
+				// sem_post(semaphore);
 				/****************************** END CRITICAL ZONE ******************************/
 			}
 			if ( MD.getDescriptor() == "projector" )
@@ -648,7 +648,7 @@ public:
 				}
 
 				/******************************** CRITICAL ZONE ********************************/
-				sem_wait(semaphore);
+				// sem_wait(semaphore);
 				pthread_mutex_lock(&mutex);
 
 				if ( resourceNumber != NO_LIMIT )
@@ -662,7 +662,7 @@ public:
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end projector output" << std::endl;
-				sem_post(semaphore);
+				// sem_post(semaphore);
 				/****************************** END CRITICAL ZONE ******************************/
 			}
 			PCBlocks[processCount]->setState(READY);
@@ -752,7 +752,7 @@ public:
 		for (int flag=0; flag < flags.size(); ++flag)
 		{
 			if ( flags[flag] == AVAILABLE )
-				return flag+1;			
+				return flag;			
 		}
 		return -1;
 	}
