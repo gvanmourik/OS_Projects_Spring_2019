@@ -34,6 +34,38 @@ To run other config files (and associated meta data files):
 ./bin/sim03 ../TestFiles/$FILENAME.conf
 ```
 
+## Running on a headless session of the ECC server:
+* Login to server with:
+```
+ssh username@ubuntu.cse.unr.edu
+```
+* Navigate to a directory **($ROOT)** to download the source code.
+* Download the code with:
+```
+git clone https://github.com/gvanmourik/OS_Projects_Spring_2019.git
+```
+* Navigate to the Project 3 directory:
+```
+cd OS_Projects_Spring_2019/Sim03_VanMourikGarrett/
+```
+* Build the project with:
+```
+./run_build
+```
+* Navigate to the build directory:
+```
+cd build/
+```
+* Add config and meta data files to TestFiles/ **(from local computer)**:
+```
+scp $PathToConfigFile username@ubuntu.cse.unr.edu:$ROOT/OS_Projects_Spring_2019/Sim03_VanMourikGarrett/TestFiles
+scp $PathToMetaDataFile username@ubuntu.cse.unr.edu:$ROOT/OS_Projects_Spring_2019/Sim03_VanMourikGarrett/TestFiles
+```
+* Run the simulation **(on server)**:
+```
+./bin/sim03 ../TestFiles/$FILENAME.conf
+```
+
 ## Project Specifications
 
 ### Resource Management System
@@ -46,7 +78,8 @@ Description: Implemented with a map, the key is a string with the resource descr
 * Defined and called in src/MetaIO.h
 
 ### Process Control Block (PCB)
-**Defined in src/PCB.h**
+**Defined in:** 
+src/PCB.h
 
 **Created in:**
 MetaIO.h
@@ -60,7 +93,8 @@ PCBlocks[processCount]->setState(<state>);
 ```
 
 ### Threads
-**Used in src/MetaIO.h**
+**Used in:** 
+src/MetaIO.h
 
 **Variables**
 ```
