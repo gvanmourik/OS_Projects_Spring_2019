@@ -25,24 +25,36 @@ To run the test config file:
 ```
 
 To run other config files (and associated meta data files):
-First, place files in the **TestFiles** directory.
-Second, call the following command, replacing $FILENAME with the file name. 
+
+* First, place files in the **TestFiles** directory.
+
+* Second, call the following command, replacing $FILENAME with the file name. 
+
 ```
 ./bin/sim03 ../TestFiles/$FILENAME.conf
 ```
 
-## Key Lines (PCB and Threads)
+## Project Specifications
+
+### Resource Management System
+* Created and initialized in src/ConfigIO.h
+* Utilized in MetaIO.h
+
+Description: Implemented with a map, the key is a string with the resource description, and the value is a vector of booleans that track whether or not a particular resource is in use. Because this project was designed with concurrency in mind yet does not currently implement forking, the output will only show that one resource is being used at a time. Once forking is implemented, the output will display multiple resource usage.
+
+### Memory Allocation
+* Defined and called in src/MetaIO.h
 
 ### Process Control Block (PCB)
 **Defined in src/PCB.h**
 
-**Created at:**
-MetaIO.h [lines 125 and 167]
+**Created in:**
+MetaIO.h
 ```
 PCBlocks[processCount] = new PCB(processCount);
 ```
-**State Modified at:**
-MetaIO.h [lines 171, 397, 409, 415, 426, 427, 441, 442, 456, 457, 461, 467, 480, 481, 495, 496, 510, 511, 515, 520, 530, 537, 540]
+**State Modified in:**
+MetaIO.h
 ```
 PCBlocks[processCount]->setState(<state>);
 ```
@@ -50,7 +62,7 @@ PCBlocks[processCount]->setState(<state>);
 ### Threads
 **Used in src/MetaIO.h**
 
-**Variables [lines 42-46]**
+**Variables**
 ```
 pthread_t thread;
 pthread_mutex_t mutex;
@@ -58,18 +70,17 @@ sem_t* semaphore;
 unsigned int semValue;
 const char* semName = "sem";
 ```
-**Initialized [lines 64-66]**
+**Initialized**
 ```
 pthread_mutex_init(&mutex, nullptr);
 semaphore = sem_open(semName, O_CREAT | O_EXCL, 0644, semValue);
 sem_unlink(semName);
 ```
-**Lock/Unlock [lines 102 and 178]**
+**Lock/Unlock**
 ```
 pthread_mutex_lock(&mutex);
 pthread_mutex_unlock(&mutex);
 ```
-**Semaphore and pthread used in I/O operations [lines 423-513]**
 
 
 
