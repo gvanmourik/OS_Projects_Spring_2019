@@ -1,11 +1,17 @@
+
+<!-- *********************************** -->
 # Project 3
+<!-- *********************************** -->
+
+
 
 ## Prerequisites:
 [CMake](https://cmake.org/download/) (Version >= 3.5.1)
 <br>[Boost](https://www.boost.org/doc/libs/1_69_0/doc/html/quickbook/install.html) (Mac OS X, Windows, Debian, and Ubuntu)
 
-## Building:
 
+
+## Building:
 To generate the makefiles and compile:
 ```
 ./run_build
@@ -15,6 +21,8 @@ To remove the build files:
 ```
 ./remove_build
 ```
+
+
 
 ## Running:
 Navigate to the build directory.
@@ -33,6 +41,8 @@ To run other config files (and associated meta data files):
 ```
 ./bin/sim03 ../TestFiles/$FILENAME.conf
 ```
+
+
 
 ## Running on a headless session of the ECC server:
 * Login to server with:
@@ -66,6 +76,7 @@ scp $PathToMetaDataFile username@ubuntu.cse.unr.edu:$ROOT/OS_Projects_Spring_201
 ./bin/sim03 ../TestFiles/$FILENAME.conf
 ```
 
+
 ## Project Specifications
 
 ### Resource Management System
@@ -74,8 +85,10 @@ scp $PathToMetaDataFile username@ubuntu.cse.unr.edu:$ROOT/OS_Projects_Spring_201
 
 Description: Implemented with a map, the key is a string with the resource description, and the value is a vector of booleans that track whether or not a particular resource is in use. Because this project was designed with concurrency in mind yet does not currently implement forking, the output will only show that one resource is being used at a time. Once forking is implemented, the output will display multiple resource usage.
 
+
 ### Memory Allocation
 * Defined and called in src/MetaIO.h
+
 
 ### Process Control Block (PCB)
 **Defined in:** 
@@ -116,8 +129,6 @@ pthread_mutex_lock(&mutex);
 pthread_mutex_unlock(&mutex);
 ```
 
-
-
 ### Structure:
 The structure of the included source files is the following:
 
@@ -126,6 +137,6 @@ main.cpp -- Handler.h -- -- ConfigIO.h -- ConfigData.h 	<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;|								<br />
 &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;MetaIO.h -- MetaData.h          <br />
 
+
 ### Notes:
 * The log file is saved to build/
-* The test config file is located in src/
