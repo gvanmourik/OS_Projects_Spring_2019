@@ -136,6 +136,7 @@ pthread_mutex_lock(&mutex);
 pthread_mutex_unlock(&mutex);
 ```
 **Semaphores**
+
 Calls to sem_wait() were removed, as some of the ECC server nodes are missing sem_wait.c, which causes a seg fault.
 
 ### Structure:
