@@ -98,5 +98,34 @@ public:
 };
 
 
+// void waitForResource(std::string resource)
+	// {
+	// 	//get resource flags
+	// 	auto flags = Resources[resource];
+
+	// 	//wait until resource flag is available
+	// 	while ( !flagAvailable(flags) ) {}
+	// }
+
+	// bool flagAvailable(const std::vector<bool> &flags)
+	// {
+	// 	for ( auto isAvailable : flags )
+	// 	{
+	// 		if ( isAvailable )
+	// 			return isAvailable;
+	// 	}
+	// 	return false;
+	// }
+
+	// int getResourceNumber(const std::vector<bool> &flags)
+	// {
+	// 	for (int flag=0; flag < flags.size(); ++flag)
+	// 	{
+	// 		if ( flags[flag] == AVAILABLE )
+	// 			return flag;			
+	// 	}
+	// 	return -1;
+	// }
+
 
 #endif /* META_DATA */

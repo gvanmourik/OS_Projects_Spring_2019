@@ -25,6 +25,7 @@ private:
 	// std::ostringstream std::cout;
 	runtime_key_t RuntimeKey;
 	std::vector<ConfigData> FileData;
+	resource_t Resources;
 
 
 public:
@@ -44,6 +45,7 @@ public:
 	std::string getPath() { return FilePath; }
 	std::string getLogType() { return logType; }
 	std::string getLogPath() { return logFilePath; }
+	resource_t getResources() { return Resources; }
 	// std::vector<ConfigData> getFileData() { return FileData; }
 	runtime_key_t getRuntimeKey() { return RuntimeKey; }
 	bool getMetaPath(std::string &returnMetaPath) 
@@ -115,16 +117,17 @@ public:
 			}
 			std::getline(configFile, currentStr); //skip newline
 
+
 			// Collect meta data line-by-line
 			ConfigData lineData;
 			std::getline(configFile, currentStr);
-			auto lineStart = currentStr.substr( 0, currentStr.find(":") );
-			bool endOfConfigData = !std::any_of( lineStart.begin(), lineStart.end(), 
-				[](const char c){ return c == '{'; } );
-			while ( !endOfConfigData )
+			auto lineStart = currentStr.substr( 0, currentStr.find(":")+1 );
+			// bool endOfConfigData = !std::any_of( lineStart.begin(), lineStart.end(), 
+			// 	[](const char c){ return c == '{'; } );
+			while ( lineStart != "Log:" )
 			{
 				//debug
-				std::cout << currentStr << std::endl;
+				// std::cout << currentStr << std::endl;
 
 				if ( !lineData.extractData(currentStr) )
 				{
@@ -148,31 +151,47 @@ public:
 					sysMemorySize = lineData.getValue();
 				}
 
-				// recover descriptor
+				// get and clean up descriptor string (tolower and then remove white space)
 				auto Descriptor = lineData.getDescriptor();
-				// clean up descriptor string (tolower and then remove white space)
 				std::transform(Descriptor.begin(), Descriptor.end(), Descriptor.begin(), ::tolower);
 				Descriptor.erase( remove_if(Descriptor.begin(), Descriptor.end(), isspace), Descriptor.end() );
-				// add descriptor to key
-				RuntimeKey[Descriptor] = lineData.getValue();
-				
-				std::getline(configFile, currentStr); //next line
-				lineStart = currentStr.substr( 0, currentStr.find(":") );
-				endOfConfigData = !std::any_of( lineStart.begin(), lineStart.end(), 
-					[](char c){ return c == '{'; } );
-			}
 
+				// collect resources
+				if ( lineData.isResource() )
+				{
+					//debug
+					// std::cout << "descriptor = " << lineData.getDescriptor() << std::endl;
+					
+					std::vector<bool> flags(lineData.getValue());
+					for ( auto flag : flags)
+					{
+						flag = AVAILABLE;
+					}
+					Resources[lineData.getDescriptor()] = flags;
+				}
+				else
+				{
+					RuntimeKey[Descriptor] = lineData.getValue();
+				}
+
+				// auto Descriptor = lineData.getDescriptor();
+				// // clean up descriptor string (tolower and then remove white space)
+				// std::transform(Descriptor.begin(), Descriptor.end(), Descriptor.begin(), ::tolower);
+				// Descriptor.erase( remove_if(Descriptor.begin(), Descriptor.end(), isspace), Descriptor.end() );
+				// add descriptor to key
+				// RuntimeKey[Descriptor] = lineData.getValue();
+				
+				// std::getline(configFile, currentStr); //next line
+				// lineStart = currentStr.substr( 0, currentStr.find(":") );
+				// endOfConfigData = !std::any_of( lineStart.begin(), lineStart.end(), 
+				// 	[](char c){ return c == '{'; } );
+				ConfigData lineData;
+				std::getline(configFile, currentStr);
+				lineStart = currentStr.substr( 0, currentStr.find(":")+1 );
+			}
 
 
 			// Collect log file and path
-			lineStart = currentStr.substr(0, currentStr.find(":"));
-			if ( lineStart != "Log" )
-			{
-				errlog.push_back(" ERROR: Config file not formatted correctly! {in log header}\n");
-				return false;
-			}
-			// std::cout << lineStart << std::endl;
-
 			logType = currentStr.substr( currentStr.find(":")+1 );
 			logType.erase( remove_if(logType.begin(), logType.end(), isspace), logType.end() );
 			// std::cout << "logType = " << logType << std::endl;
@@ -249,21 +268,6 @@ public:
 
 
 };
-
-
-/// Example configuration file:
-	// 1 Start Simulator Configuration File
-	// 2 Version/Phase: 2.0
-	// 3 File Path: Test_2e.mdf
-	// 4 Projector cycle time {msec}: 25
-	// 5 Processor cycle time {msec}: 10
-	// 6 Keyboard cycle time {msec}: 50
-	// 7 Monitor display time {msec}: 20
-	// 8 Scanner cycle time {msec}: 10
-	// 9 Hard drive cycle time {msec}: 15
-	// 10 Log: Log to Both
-	// 11 Log File Path: logfile_1.lgf
-	// 12 End Simulator Configuration File
 
 
 #endif /* CONFIG_IO */

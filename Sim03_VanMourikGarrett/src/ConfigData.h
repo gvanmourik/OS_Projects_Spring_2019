@@ -5,6 +5,7 @@
 // #define USEC "usec"
 
 #include <map>
+#include <vector>
 #include <string>
 #include <algorithm>
 #include <unordered_set>
@@ -13,7 +14,12 @@
 #define MONITOR "LogtoMonitor"
 #define FILE 	"LogtoFile"
 
+#define AVAILABLE true
+#define BUSY true
+#define NO_LIMIT -1
+
 typedef std::map<std::string, double> runtime_key_t;
+typedef std::map<std::string, std::vector<bool>> resource_t;
 std::unordered_set<std::string> LogType = {BOTH, 
 										   FILE,
 										   MONITOR}; 
@@ -29,15 +35,17 @@ std::unordered_set<std::string> LogType = {BOTH,
 class ConfigData 
 {
 private:
-	double runTimeValue;
+	double value;
 	std::string units;
 	std::string Descriptor;
+	bool isResourceQuantity = false;
 
 
 public:
 
-	int getValue() { return runTimeValue; }
+	int getValue() { return value; }
 	std::string getDescriptor() { return Descriptor; }
+	bool isResource() { return isResourceQuantity; }
 
 	// extracts the data while checking the format
 	bool extractData(const std::string &s)
@@ -52,10 +60,33 @@ public:
 	
   		if ( !checkDescriptor(s, Descriptor) )
   			return false;
-		// Descriptor = descriptor;
 
   		//debug
 		// std::cout << "After descriptor..." << std::endl;
+
+
+		if ( isResourceQuantity )
+		{
+			//collect quantity
+			auto valueStr = s.substr( s.find(":")+1 );
+			valueStr.erase( std::remove_if(valueStr.begin(), valueStr.end(), isspace), valueStr.end() );
+			
+			if ( valueStr.empty() )
+				return false;
+
+			//verify that the string only consists of digits
+			if ( !std::all_of(valueStr.begin(), valueStr.end(), ::isdigit) )
+				return false;
+			
+			//set value
+			value = std::atof( valueStr.c_str() );
+
+			//set resource descriptor
+			setResourceDescriptor();
+
+			return true;
+		}
+
 
 		// check if the units are an acceptable type
 		auto temp = s.substr( s.find("{"), s.find("}:") ); //not sure why temp step is needed
@@ -69,20 +100,19 @@ public:
 		//debug
 		// std::cout << "After units..." << std::endl;
 
-		// collect the runTimeValue of the device
-		auto value = s.substr( s.find(":")+1 );
-		value.erase( std::remove_if(value.begin(), value.end(), isspace), value.end() );
-		if ( value.empty() )
+		// collect the value of the device
+		auto valueStr = s.substr( s.find(":")+1 );
+		valueStr.erase( std::remove_if(valueStr.begin(), valueStr.end(), isspace), valueStr.end() );
+		if ( valueStr.empty() )
 			return false;
 		//verify that the string only consists of digits
-		if ( !std::all_of(value.begin(), value.end(), ::isdigit) )
+		if ( !std::all_of(valueStr.begin(), valueStr.end(), ::isdigit) )
 			return false;
 		
-		runTimeValue = std::atof( value.c_str() );
+		value = std::atof( valueStr.c_str() );
 		if ( units == "Mbytes" || units == "Gbytes" )
 		{
-			//convert to kbytes
-			convert();
+			convertToKB();
 		}
 
 		return true;
@@ -95,11 +125,13 @@ public:
 		
 		bool cycle_time = s.find(" cycle time {") != std::string::npos;
 		bool display_time = s.find(" display time {") != std::string::npos;
+		bool resource_quantity = s.find(" quantity:") != std::string::npos;
 		bool sys_memory = s.find("System memory") != std::string::npos;
 		bool sys_memory_size = s.find("Memory block size") != std::string::npos;
 
 		if ( !(cycle_time 		||
 			   display_time 	||
+			   resource_quantity||
 			   sys_memory 		||
 			   sys_memory_size 
 			   ))
@@ -113,30 +145,26 @@ public:
 		std::string descriptor;
 
 		if ( cycle_time )
+		{
 			setDescriptor(d, s, descriptorSet, !isMemorySpec, " cycle time {");
+		}
 		if ( display_time )
+		{
 			setDescriptor(d, s, descriptorSet, !isMemorySpec, " display time {");
+		}
+		if ( resource_quantity )
+		{
+			isResourceQuantity = true;
+			setDescriptor(d, s, descriptorSet, !isMemorySpec, " quantity:");
+		}
 		if ( sys_memory )
+		{
 			setDescriptor(d, s, descriptorSet, isMemorySpec, "System memory");
+		}
 		if ( sys_memory_size )
+		{
 			setDescriptor(d, s, descriptorSet, isMemorySpec, "Memory block size");
-
-		// descriptor = s.substr( 0, s.find(" cycle time {") );
-		// if ( descriptor != s )
-		// {
-		// 	d = descriptor;
-		// 	descriptorSet = true;
-		// }
-		// descriptor = s.substr( 0, s.find(" display time {") );
-		// if ( descriptor != s )
-		// {
-		// 	d = descriptor;
-		// 	descriptorSet = true;
-		// }
-		// if ( !descriptorSet )
-		// {
-		// 	d = s;
-		// }
+		}
 
 		//debug
 		// std::cout << "After descriptor assignment..." << std::endl;
@@ -144,15 +172,15 @@ public:
 		return descriptorSet;
 	}
 
-	void convert()
+	void convertToKB()
 	{
 		if ( units == "Mbytes" )
 		{
-			runTimeValue *= 1e3;
+			value *= 1e3;
 		}
 		if ( units == "Gbytes" )
 		{
-			runTimeValue *= 1e6;
+			value *= 1e6;
 		}
 		units = "kbytes";
 	}
@@ -175,20 +203,34 @@ public:
 		}
 	}
 
+	void setResourceDescriptor()
+	{
+		if ( Descriptor == "Hard drive" )
+			Descriptor = "HDD";
+		if ( Descriptor == "Projector" )
+			Descriptor = "PROJ";
+		if ( Descriptor == "Monitor" )
+			Descriptor = "MON";
+		if ( Descriptor == "Keyboard" )
+			Descriptor = "KEY";
+		if ( Descriptor == "Scanner" )
+			Descriptor = "SCAN";
+	}
+
 	void print()
 	{
 		if ( units == "msec" )
-			std::cout << "\t" << Descriptor << " = " << runTimeValue << " ms/cycle" << std::endl;
+			std::cout << "\t" << Descriptor << " = " << value << " ms/cycle" << std::endl;
 		if ( units == "kbytes" )
 		{
-			if ( runTimeValue > 1e6 )
+			if ( value > 1e6 )
 			{
 				std::cout << "\t" << Descriptor << " = " << std::scientific;
-				std::cout << (double)runTimeValue << " kbytes" << std::endl;
+				std::cout << (double)value << " kbytes" << std::endl;
 			}
 			else
 			{
-				std::cout << "\t" << Descriptor << " = " << runTimeValue << " kbytes" << std::endl;
+				std::cout << "\t" << Descriptor << " = " << value << " kbytes" << std::endl;
 			}
 		}
 	}

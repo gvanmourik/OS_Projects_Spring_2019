@@ -40,9 +40,10 @@ public:
 
 
 		/// META
-		MetaIO meta_handler("../src/" + metaDataPath, 
+		MetaIO meta_handler("../TestFiles/" + metaDataPath, 
 							config_handler.getSysMemory(),
-							config_handler.getSysMemorySize(), 
+							config_handler.getSysMemorySize(),
+							config_handler.getResources(), 
 							config_handler.getRuntimeKey());
 
 		// std::cout <<"before readfile"<<std::endl;

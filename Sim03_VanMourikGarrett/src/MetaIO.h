@@ -40,8 +40,9 @@ private:
 	process_map_t PCBlocks;
 	runtime_key_t rtKey;
 
+	resource_t Resources;
+
 	//multithreading
-	void* time_ptr;
 	pthread_t thread;
 	pthread_mutex_t mutex;
 	sem_t* semaphore;
@@ -51,8 +52,9 @@ private:
 
 public:
 	/// Constructors
-	MetaIO(std::string _filePath, int memory, int memorySize, runtime_key_t _rtKey) : 
-		FilePath(_filePath), sysMemory(memory), sysMemorySize(memorySize), rtKey(_rtKey){}
+	MetaIO(std::string _filePath, int memory, int memorySize, resource_t _Resources, runtime_key_t _rtKey) : 
+		FilePath(_filePath), sysMemory(memory), sysMemorySize(memorySize), Resources(_Resources), 
+		rtKey(_rtKey){}
 	~MetaIO(){}
 
 
@@ -363,6 +365,8 @@ public:
 	bool printLine(int processID, MetaData &MD, runtime_key_t RTKey)
 	{
 		pthread_mutex_init(&mutex, nullptr);
+		semaphore = sem_open(semName, O_CREAT | O_EXCL, 0644, semValue);
+		sem_unlink(semName);
 		double runtime, cycles, waitTime;
 
 		//system
@@ -424,17 +428,38 @@ public:
 				cycles = (double)MD.getCycles();
 				waitTime = runtime * cycles;
 
+				//debug
+				// std::cout << "waitTime = " << waitTime << std::endl;
+
+				waitForResource("HDD");
+				int resourceNumber = getResourceNumber("HDD");
+				if ( resourceNumber == NO_LIMIT )
+				{
+					std::cout << getTimeString() << processorName << "start hard drive input" << std::endl;
+				}
+				else
+				{
+					std::cout << getTimeString() << processorName << "start hard drive input on HDD ";
+					std::cout << resourceNumber << std::endl;
+				}
+				
+				/******************************** CRITICAL ZONE ********************************/
 				sem_wait(semaphore);
-				std::cout << getTimeString() << processorName << "start hard drive input" << std::endl;
 				pthread_mutex_lock(&mutex);
+
+				if ( resourceNumber != NO_LIMIT )
+					setResourceBusy("HDD", resourceNumber);
 				pthread_create(&thread, nullptr, MetaIO::wait_thread, (void*)&waitTime);
+				if ( resourceNumber != NO_LIMIT )
+					setResourceFree("HDD", resourceNumber);
+				
 				PCBlocks[processCount]->setState(RUNNING);
 				PCBlocks[processCount]->setState(WAIT);
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end hard drive input" << std::endl;
 				sem_post(semaphore);
-			
+				/****************************** END CRITICAL ZONE ******************************/
 			}
 			if ( MD.getDescriptor() == "scanner" )
 			{
@@ -442,17 +467,38 @@ public:
 				cycles = (double)MD.getCycles();
 				waitTime = runtime * cycles;
 
+				//debug
+				// std::cout << "waitTime = " << waitTime << std::endl;
+				
+				waitForResource("SCAN");
+				int resourceNumber = getResourceNumber("SCAN");
+				if ( resourceNumber == NO_LIMIT )
+				{
+					std::cout << getTimeString() << processorName << "start scanner input" << std::endl;
+				}
+				else
+				{
+					std::cout << getTimeString() << processorName << "start scanner input on SCAN ";
+					std::cout << resourceNumber << std::endl;
+				}
+
+				/******************************** CRITICAL ZONE ********************************/
 				sem_wait(semaphore);
-				std::cout << getTimeString() << processorName << "start scanner input" << std::endl;
 				pthread_mutex_lock(&mutex);
+				
+				if ( resourceNumber != NO_LIMIT )
+					setResourceBusy("SCAN", resourceNumber);
 				pthread_create(&thread, nullptr, MetaIO::wait_thread, (void*)&waitTime);
+				if ( resourceNumber != NO_LIMIT )
+					setResourceFree("SCAN", resourceNumber);
+
 				PCBlocks[processCount]->setState(RUNNING);
 				PCBlocks[processCount]->setState(WAIT);
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end scanner input" << std::endl;
 				sem_post(semaphore);
-			
+				/****************************** END CRITICAL ZONE ******************************/
 			}
 			if ( MD.getDescriptor() == "keyboard" )
 			{
@@ -460,17 +506,38 @@ public:
 				cycles = (double)MD.getCycles();
 				waitTime = runtime * cycles;
 
+				//debug
+				// std::cout << "waitTime = " << waitTime << std::endl;
+
+				waitForResource("KEY"); //returns immeadiately if no limit
+				int resourceNumber = getResourceNumber("KEY");
+				if ( resourceNumber == NO_LIMIT )
+				{
+					std::cout << getTimeString() << processorName << "start keyboard input" << std::endl;
+				}
+				else
+				{
+					std::cout << getTimeString() << processorName << "start keyboard input on KEY ";
+					std::cout << resourceNumber << std::endl;
+				}
+
+				/******************************** CRITICAL ZONE ********************************/
 				sem_wait(semaphore);
-				std::cout << getTimeString() << processorName << "start keyboard input" << std::endl;
 				pthread_mutex_lock(&mutex);
+
+				if ( resourceNumber != NO_LIMIT )
+					setResourceBusy("KEY", resourceNumber);
 				pthread_create(&thread, nullptr, MetaIO::wait_thread, (void*)&waitTime);
+				if ( resourceNumber != NO_LIMIT )
+					setResourceFree("KEY", resourceNumber);
+
 				PCBlocks[processCount]->setState(RUNNING);
 				PCBlocks[processCount]->setState(WAIT);
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end keyboard input" << std::endl;
 				sem_post(semaphore);
-			
+				/****************************** END CRITICAL ZONE ******************************/
 			}
 			PCBlocks[processCount]->setState(READY);
 		}
@@ -487,17 +554,38 @@ public:
 				cycles = (double)MD.getCycles();
 				waitTime = runtime * cycles;
 
+				//debug
+				// std::cout << "waitTime = " << waitTime << std::endl;
+
+				waitForResource("HDD");
+				int resourceNumber = getResourceNumber("HDD");
+				if ( resourceNumber == NO_LIMIT )
+				{
+					std::cout << getTimeString() << processorName << "start hard drive output" << std::endl;
+				}
+				else
+				{
+					std::cout << getTimeString() << processorName << "start hard drive output on HDD ";
+					std::cout << resourceNumber << std::endl;
+				}
+
+				/******************************** CRITICAL ZONE ********************************/
 				sem_wait(semaphore);
-				std::cout << getTimeString() << processorName << "start hard drive output" << std::endl;
 				pthread_mutex_lock(&mutex);
+
+				if ( resourceNumber != NO_LIMIT )
+					setResourceBusy("HDD", resourceNumber);
 				pthread_create(&thread, nullptr, MetaIO::wait_thread, (void*)&waitTime);
+				if ( resourceNumber != NO_LIMIT )
+					setResourceFree("HDD", resourceNumber);
+
 				PCBlocks[processCount]->setState(RUNNING);
 				PCBlocks[processCount]->setState(WAIT);
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end hard drive output" << std::endl;
 				sem_post(semaphore);
-			
+				/****************************** END CRITICAL ZONE ******************************/
 			}
 			if ( MD.getDescriptor() == "monitor" )
 			{
@@ -505,16 +593,38 @@ public:
 				cycles = (double)MD.getCycles();
 				waitTime = runtime * cycles;
 
+				//debug
+				// std::cout << "waitTime = " << waitTime << std::endl;
+
+				waitForResource("MON");
+				int resourceNumber = getResourceNumber("MON");
+				if ( resourceNumber == NO_LIMIT )
+				{
+					std::cout << getTimeString() << processorName << "start monitor output" << std::endl;
+				}
+				else
+				{
+					std::cout << getTimeString() << processorName << "start monitor output on MON ";
+					std::cout << resourceNumber << std::endl;
+				}
+
+				/******************************** CRITICAL ZONE ********************************/
 				sem_wait(semaphore);
-				std::cout << getTimeString() << processorName << "start monitor output" << std::endl;
 				pthread_mutex_lock(&mutex);
+
+				if ( resourceNumber != NO_LIMIT )
+					setResourceBusy("MON", resourceNumber);
 				pthread_create(&thread, nullptr, MetaIO::wait_thread, (void*)&waitTime);
+				if ( resourceNumber != NO_LIMIT )
+					setResourceFree("MON", resourceNumber);
+
 				PCBlocks[processCount]->setState(RUNNING);
 				PCBlocks[processCount]->setState(WAIT);
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end monitor output" << std::endl;
 				sem_post(semaphore);
+				/****************************** END CRITICAL ZONE ******************************/
 			}
 			if ( MD.getDescriptor() == "projector" )
 			{
@@ -522,16 +632,38 @@ public:
 				cycles = (double)MD.getCycles();
 				waitTime = runtime * cycles;
 
+				//debug
+				// std::cout << "waitTime = " << waitTime << std::endl;
+
+				waitForResource("PROJ");
+				int resourceNumber = getResourceNumber("PROJ");
+				if ( resourceNumber == NO_LIMIT )
+				{
+					std::cout << getTimeString() << processorName << "start projector output" << std::endl;
+				}
+				else
+				{
+					std::cout << getTimeString() << processorName << "start projector output on PROJ ";
+					std::cout << resourceNumber << std::endl;
+				}
+
+				/******************************** CRITICAL ZONE ********************************/
 				sem_wait(semaphore);
-				std::cout << getTimeString() << processorName << "start projector output" << std::endl;
 				pthread_mutex_lock(&mutex);
+
+				if ( resourceNumber != NO_LIMIT )
+					setResourceBusy("PROJ", resourceNumber);
 				pthread_create(&thread, nullptr, MetaIO::wait_thread, (void*)&waitTime);
+				if ( resourceNumber != NO_LIMIT )
+					setResourceFree("PROJ", resourceNumber);
+
 				PCBlocks[processCount]->setState(RUNNING);
 				PCBlocks[processCount]->setState(WAIT);
 				pthread_mutex_unlock(&mutex);
 				pthread_join(thread, nullptr);
 				std::cout << getTimeString() << processorName << "end projector output" << std::endl;
 				sem_post(semaphore);
+				/****************************** END CRITICAL ZONE ******************************/
 			}
 			PCBlocks[processCount]->setState(READY);
 		}
@@ -577,7 +709,7 @@ public:
 		auto temp = memAddress;
 		ss << std::hex << temp;
 
-		//format output string
+		//format output
 		int numBits = 8;
 		auto memString = ss.str();
 		if ( memString.length() < numBits )
@@ -590,6 +722,51 @@ public:
 		}
 
 		return memString;
+	}
+
+	bool waitForResource(std::string resource)
+	{
+		//get resource flags
+		auto flags = Resources[resource];
+		if ( flags.empty() )
+			return false;
+
+		//wait until resource flag is available
+		while ( !flagAvailable(flags) ) {}
+		return true;
+	}
+
+	bool flagAvailable(const std::vector<bool> &flags)
+	{
+		for ( auto flag : flags )
+		{
+			if ( flag == AVAILABLE )
+				return flag;
+		}
+		return false;
+	}
+
+	int getResourceNumber(std::string resource)
+	{
+		auto flags = Resources[resource];
+		for (int flag=0; flag < flags.size(); ++flag)
+		{
+			if ( flags[flag] == AVAILABLE )
+				return flag;			
+		}
+		return -1;
+	}
+
+	void setResourceBusy(std::string resource, int resourceNumber)
+	{
+		auto flags = Resources[resource];
+		flags[resourceNumber] = BUSY;
+	}
+
+	void setResourceFree(std::string resource, int resourceNumber)
+	{
+		auto flags = Resources[resource];
+		flags[resourceNumber] = AVAILABLE;
 	}
 
 	void wait(double delayTime)
@@ -605,6 +782,9 @@ public:
 		Timer timer;
 		timer.start();
 
+		//debug
+		// std::cout << "waitTime[thread] = " << *(double*)delayTime << std::endl;
+
 		//wait
 		while ( timer.mSec() < *(double*)delayTime ){}
 		pthread_exit(nullptr);
@@ -617,6 +797,23 @@ public:
 	}
 
 };
+
+
+/// Example meta-data file:
+	// 1 Start Program Meta-Data Code:
+	// 2 S{begin}0; A{begin}0; P{run}11; P{run}9; P{run}12;
+	// 3 P{run}9; P{run}11; P({run}8; P{run}14; P{run}14; P{run}12;
+	// 4 P{run}12; P{run}6; P{run}8; P{run}9; P{run}6; P{run}14;
+	// 5 P{run}15; P{run}12; P{run}9; P{run}6; P{run}5; A{finish}0;
+	// 6 A{begin}0; P{run}6; P{run}6; P{run}9; P{run}11; P{run}13;
+	// 7 P{run}14; P{run}5; P{run}7; P{run}14; P{run}15; P{run}7;
+	// 8 P{run}5; P{run}14; P{run}15; P{run}14; P{run}7; P{run}14;
+	// 9 P{run}13; P{run}8; P{run}7; A{finish}0; A{begin}0; P{run}6;
+	// 10 P{run}10; P{run}13; P{run}9; P{run}15; P{run}6; P{run}13;
+	// 11 P{run}11; P{run}5; P{run}6; P{run}7; P{run}12; P{run}11;
+	// 12 P{run}6; P{run}8; P{run}10; P{run}5; P{run}8; P{run}9; P{run}7;
+	// 13 A{finish}0; S{finish}0.
+	// 14 End Program Meta-Data Code.
 
 
 #endif /* META_IO */
