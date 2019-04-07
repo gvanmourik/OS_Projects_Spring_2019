@@ -21,12 +21,14 @@ Navigate to the build directory.
 
 To run the test config file:
 ```
-./bin/sim03 ../src/testConfig.conf
+./bin/sim03 ../TestFiles/testConfig.conf
 ```
 
-To run other config files:
+To run other config files (and associated meta data files):
+First, place files in the **TestFiles** directory.
+Second, call the following command, replacing $FILENAME with the file name. 
 ```
-./bin/sim03 <file_path>
+./bin/sim03 ../TestFiles/$FILENAME.conf
 ```
 
 ## Key Lines (PCB and Threads)
