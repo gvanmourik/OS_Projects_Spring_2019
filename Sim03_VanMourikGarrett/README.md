@@ -68,8 +68,8 @@ cd build/
 ```
 * Add config and meta data files to TestFiles/ **(from local computer)**:
 ```
-scp $PathToConfigFile username@ubuntu.cse.unr.edu:$ROOT/OS_Projects_Spring_2019/Sim03_VanMourikGarrett/TestFiles
-scp $PathToMetaDataFile username@ubuntu.cse.unr.edu:$ROOT/OS_Projects_Spring_2019/Sim03_VanMourikGarrett/TestFiles
+scp $FILENAME.conf username@ubuntu.cse.unr.edu:$ROOT/OS_Projects_Spring_2019/Sim03_VanMourikGarrett/TestFiles
+scp $FILENAME.mdf username@ubuntu.cse.unr.edu:$ROOT/OS_Projects_Spring_2019/Sim03_VanMourikGarrett/TestFiles
 ```
 * Run the simulation **(on server)**:
 ```
