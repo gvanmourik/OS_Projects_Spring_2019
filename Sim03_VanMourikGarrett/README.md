@@ -130,6 +130,7 @@ semaphore = sem_open(semName, O_CREAT | O_EXCL, 0644, semValue);
 sem_unlink(semName);
 ```
 **Lock/Unlock**
+**Called in:** src/MetaIO.h **Lines[448,458,487,497,...]**
 ```
 pthread_mutex_lock(&mutex);
 pthread_mutex_unlock(&mutex);
