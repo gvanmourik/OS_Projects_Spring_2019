@@ -752,7 +752,7 @@ public:
 		for (int flag=0; flag < flags.size(); ++flag)
 		{
 			if ( flags[flag] == AVAILABLE )
-				return flag;			
+				return flag+1;			
 		}
 		return -1;
 	}
