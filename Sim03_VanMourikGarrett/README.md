@@ -45,33 +45,39 @@ To run other config files (and associated meta data files):
 
 
 ## Running on a headless session of the ECC server:
-* Login to server with:
+Login to server with:
 ```
 ssh username@ubuntu.cse.unr.edu
 ```
-* Navigate to a directory **($ROOT)** to download the source code.
-* Download the code with:
+
+Navigate to a directory **($ROOT)** to download the source code.
+Download the code with:
 ```
 git clone https://github.com/gvanmourik/OS_Projects_Spring_2019.git
 ```
-* Navigate to the Project 3 directory:
+
+Navigate to the Project 3 directory:
 ```
 cd OS_Projects_Spring_2019/Sim03_VanMourikGarrett/
 ```
-* Build the project with:
+
+Build the project with:
 ```
 ./run_build
 ```
-* Navigate to the build directory:
+
+Navigate to the build directory:
 ```
 cd build/
 ```
-* Add config and meta data files to TestFiles/ **(from local computer)**:
+
+Add config and meta data files to TestFiles/ **(from local computer)**:
 ```
 scp $FILENAME.conf username@ubuntu.cse.unr.edu:$ROOT/OS_Projects_Spring_2019/Sim03_VanMourikGarrett/TestFiles
 scp $FILENAME.mdf username@ubuntu.cse.unr.edu:$ROOT/OS_Projects_Spring_2019/Sim03_VanMourikGarrett/TestFiles
 ```
-* Run the simulation **(on server)**:
+
+Run the simulation **(on server)**:
 ```
 ./bin/sim03 ../TestFiles/$FILENAME.conf
 ```
