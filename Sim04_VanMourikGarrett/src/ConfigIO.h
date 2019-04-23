@@ -122,28 +122,54 @@ public:
 			std::getline(configFile, currentStr); //skip newline
 
 
-			// Collect quantum number 
-			std::string quantumNumberStr;
-			std::getline(configFile, currentStr, ':');
-			if ( currentStr != "Processor Quantum Number")
-			{
-				errlog.push_back(" ERROR: Config file not formatted correctly! {processor quantum number}\n");
-				return false;
-			}
-			configFile >> std::skipws >> quantumNumberStr;
-			quantumNumber = std::atoi( quantumNumberStr.c_str() );
-			std::getline(configFile, currentStr); //skip newline
+			// // Collect quantum number 
+			// std::string quantumNumberStr;
+			// std::getline(configFile, currentStr, ':');
+			// if ( currentStr != "Processor Quantum Number")
+			// {
+			// 	errlog.push_back(" ERROR: Config file not formatted correctly! {processor quantum number}\n");
+			// 	return false;
+			// }
+			// configFile >> std::skipws >> quantumNumberStr;
+			// quantumNumber = std::atoi( quantumNumberStr.c_str() );
+			// std::getline(configFile, currentStr); //skip newline
 
 
-			// Collect cpu scheduling mode
-			std::getline(configFile, currentStr, ':');
-			if ( currentStr != "CPU Scheduling Code")
+			// // Collect cpu scheduling mode
+			// std::getline(configFile, currentStr, ':');
+			// if ( currentStr != "CPU Scheduling Code")
+			// {
+			// 	errlog.push_back(" ERROR: Config file not formatted correctly! {CPU Scheduling Code}\n");
+			// 	return false;
+			// }
+			// configFile >> std::skipws >> scheduleType;
+			// std::getline(configFile, currentStr); //skip newline
+
+			//allows backwards compatibility 
+			std::vector<std::string> lines;
+			std::vector<std::string> values;
+			
+			for (int i=0; i<2; ++i)
 			{
-				errlog.push_back(" ERROR: Config file not formatted correctly! {CPU Scheduling Code}\n");
-				return false;
+				std::getline(configFile, currentStr, ':');
+				lines.push_back(currentStr);
+				configFile >> std::skipws >> currentStr;
+				values.push_back(currentStr);
+				std::getline(configFile, currentStr); //skip newline
 			}
-			configFile >> std::skipws >> scheduleType;
-			std::getline(configFile, currentStr); //skip newline
+
+			if ( lines[0] == "Processor Quantum Number" && 
+				 lines[1] == "CPU Scheduling Code" )
+			{
+				quantumNumber = std::atoi( values[0].c_str() );
+				scheduleType = values[1];
+			}
+			else
+			{
+				std::cout << " -- WARNING: Either the quantum number or the CPU scheduling code were not specified! Defaulting to '1' and 'FIFO'." << std::endl;
+				quantumNumber = 1;
+				scheduleType = "FIFO";
+			}
 
 
 			// Collect meta data line-by-line

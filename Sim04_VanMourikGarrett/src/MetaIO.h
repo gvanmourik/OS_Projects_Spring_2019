@@ -266,17 +266,6 @@ public:
 				//     	   ii) push to FileData [not sure if necessary]
 				//****************************************************************************************
 
-				//old...
-				// 1) add map arg to extractData(), because key are sorted upon insertion
-				// 2) use the following as the keys...
-				//    a) SJF - total time(runtime * cycles). 
-				//       Use RTKey to get runtime and metadata to get cycles.
-				//    b) FIFO - use a counter in metadata.h per 
-
-
-
-				// printLine(processCount, lineData, rtKey);
-				// FileData.push_back(lineData);
 		    }
 
 		    //unlock thread
