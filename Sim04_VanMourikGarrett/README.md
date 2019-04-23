@@ -86,10 +86,11 @@ Run the simulation **(on server)**:
 ## Project Specifications
 
 ### Resource Management System
-* Created and initialized in src/ConfigIO.h
-* Utilized in src/MetaIO.h
+**Created and initialized in:** src/ConfigIO.h
 
-Description: Implemented with a map, the key is a string with the resource description, and the value is a vector of booleans that track whether or not a particular resource is in use. Because this project was designed with concurrency in mind yet does not currently implement forking, the output will only show that **one resource** is being used at a time. Once forking is implemented, the output will display multiple resource usage.
+**Utilized in:** src/MetaIO.h
+
+**Description:** Implemented with a map, the key is a string with the resource description, and the value is a vector of booleans that track whether or not a particular resource is in use. Because this project was designed with concurrency in mind yet does not currently implement forking, the output will only show that *one resource* is being used at a time. Once forking is implemented, the output will display multiple resource usage.
 
 
 ### Scheduling Algorithms
@@ -101,7 +102,8 @@ src/MetaIO.h
 
 
 ### Memory Allocation
-* Defined and called in src/MetaIO.h
+**Defined and called in:**
+src/MetaIO.h
 
 
 ### Process Control Block (PCB)
