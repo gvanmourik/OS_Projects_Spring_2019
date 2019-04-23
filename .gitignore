@@ -3,6 +3,7 @@
 *.lgf
 *.zip
 *.tar.gz
+*.rtf
 
 ## Other
 .DS_Store
