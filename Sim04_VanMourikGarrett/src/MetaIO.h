@@ -1,6 +1,7 @@
 #ifndef META_IO
 #define META_IO
 
+#include <queue>
 #include <vector>
 #include <sstream>
 #include <fstream>
@@ -22,6 +23,8 @@
 #include "MetaData.h"
 
 typedef void * (*thread_func_ptr)(void *);
+typedef std::vector<MetaData> MetaDataList_t;
+typedef std::pair<int, MetaDataList_t> md_list_pair_t;
 
 
 class MetaIO 
@@ -33,14 +36,17 @@ private:
 	int sysMemory;
 	int sysMemorySize;
 	int sysMemLocation = 0;
-	int processCount = 0;
+	int processCount = -1;
 	Timer timer;
 	std::string FilePath;
-	std::vector<MetaData> FileData;
+	std::string ScheduleType;
+	MetaDataList_t FileData;
 	process_map_t PCBlocks;
 	runtime_key_t rtKey;
 
 	resource_t Resources;
+	std::vector<MetaDataList_t> Applications;
+	std::vector<MetaDataList_t> RuntimeList;
 
 	//multithreading
 	pthread_t thread;
@@ -52,9 +58,10 @@ private:
 
 public:
 	/// Constructors
-	MetaIO(std::string _filePath, int memory, int memorySize, resource_t _Resources, runtime_key_t _rtKey) : 
-		FilePath(_filePath), sysMemory(memory), sysMemorySize(memorySize), Resources(_Resources), 
-		rtKey(_rtKey){}
+	MetaIO(std::string _filePath, int memory, int memorySize, std::string scheduleType, 
+		resource_t _Resources, runtime_key_t _rtKey) : 
+		FilePath(_filePath), sysMemory(memory), sysMemorySize(memorySize), 
+		ScheduleType(scheduleType), Resources(_Resources), rtKey(_rtKey){}
 	~MetaIO(){}
 
 
@@ -89,6 +96,7 @@ public:
 			}
 
 			MetaData lineData;
+			MetaData startData, finishData;
 			std::string dataStr;
 			
 			/// Collect meta-data
@@ -105,6 +113,8 @@ public:
 			
 			//lock thread
 			pthread_mutex_lock(&mutex);
+			int IOCount = 0;
+			MetaDataList_t app;
 			
 			while ( !lastMetaDataLine )
 			{
@@ -113,7 +123,7 @@ public:
 				std::stringstream lineStream(currentStr);
 			    while ( std::getline(lineStream, dataStr, ';') ) 
 			    {
-					if ( !lineData.extractData(dataStr) )
+					if ( !lineData.extractData(dataStr, IOCount) )
 					{
 						errlog.push_back(" ERROR: File not formatted correctly! {in meta-data}\n");
 						return false;
@@ -124,17 +134,49 @@ public:
 						errlog.push_back(" ERROR: Application begin/finish not configured correctly!\n");
 						return false;
 					}
+
 					if ( lineData.getType() == "A" && lineData.getDescriptor() == "begin" )
 					{
+						IOCount = 0;
 						processCount++;
 						PCBlocks[processCount] = new PCB(processCount);
+
+						//add A{begin}
+						lineData.setProcessID(processCount);
+						app.push_back(lineData);
 					}
-					if ( lineData.getType() == "A" && lineData.getDescriptor() == "finish" )
+					else if ( lineData.getType() == "A" && lineData.getDescriptor() == "finish" )
 					{
+						//add A{finish}
+						lineData.setProcessID(processCount);
+						app.push_back(lineData);
+
+						Applications.push_back(app);
+						app.clear();
+						PCBlocks[processCount]->setIOCount(IOCount);
 						PCBlocks[processCount]->setState(EXIT);
 					}
-					printLine(processCount, lineData, rtKey);
-					FileData.push_back(lineData);
+					else if ( lineData.getType() == "S" )
+					{
+						//add S{begin} and S{finish}
+						lineData.setProcessID(processCount);
+
+						if ( lineData.getDescriptor() == "begin" )
+							startData = lineData;
+						if ( lineData.getDescriptor() == "finish" )
+							finishData = lineData;
+					}
+					else
+					{
+						// add meta data to app vector
+						lineData.setProcessID(processCount);
+						app.push_back(lineData);
+					}
+
+					
+
+					// printLine(processCount, lineData, rtKey);
+					// FileData.push_back(lineData);
 			    }
 
 			    if ( !readline(metaFile, currentStr) )
@@ -156,7 +198,7 @@ public:
 		        dataStr.erase( remove_if(dataStr.begin(), dataStr.end(), isspace), dataStr.end() );
 		        // std::cout << dataStr << std::endl;
 
-				if ( !lineData.extractData(dataStr) )
+				if ( !lineData.extractData(dataStr, IOCount) )
 				{
 					errlog.push_back(" ERROR: File not formatted correctly! {in meta-data}\n");
 					return false;
@@ -166,15 +208,46 @@ public:
 					errlog.push_back(" ERROR: Application begin/finish not configured correctly!\n");
 					return false;
 				}
+
 				if ( lineData.getType() == "A" && lineData.getDescriptor() == "begin" )
 				{
+					IOCount = 0;
 					processCount++;
 					PCBlocks[processCount] = new PCB(processCount);
+
+					//add A{begin}
+					lineData.setProcessID(processCount);
+					app.push_back(lineData);
 				}
-				if ( lineData.getType() == "A" && lineData.getDescriptor() == "finish" )
+				else if ( lineData.getType() == "A" && lineData.getDescriptor() == "finish" )
 				{
+					//add A{finish}
+					lineData.setProcessID(processCount);
+					app.push_back(lineData);
+
+					Applications.push_back(app);
+					app.clear();
+					PCBlocks[processCount]->setIOCount(IOCount);
 					PCBlocks[processCount]->setState(EXIT);
 				}
+				else if ( lineData.getType() == "S" )
+				{
+					//add S{begin} and S{finish}
+					lineData.setProcessID(processCount);
+					
+					if ( lineData.getDescriptor() == "begin" )
+						startData = lineData;
+					if ( lineData.getDescriptor() == "finish" )
+						finishData = lineData;
+				}
+				else
+				{
+					// add meta data to app vector
+					lineData.setProcessID(processCount);
+					app.push_back(lineData);
+				}
+
+				
 
 				//****************************************************************************************
 				/// Sudo code...
@@ -202,12 +275,79 @@ public:
 
 
 
-				printLine(processCount, lineData, rtKey);
-				FileData.push_back(lineData);
+				// printLine(processCount, lineData, rtKey);
+				// FileData.push_back(lineData);
 		    }
 
 		    //unlock thread
 			pthread_mutex_unlock(&mutex);
+
+			// Sort recorded applications based on scheduleType
+			if ( ScheduleType == "FIFO" )
+			{
+				for ( auto app : Applications )
+				{
+					RuntimeList.push_back(app);
+				}
+			}
+			if ( ScheduleType == "SJF" )
+			{
+				MetaDataList_t app;
+				std::multimap<int, MetaDataList_t> AppOrderMap;
+				for ( auto app : Applications )
+				{
+					// AppOrderMap[app.size()] = app;
+					AppOrderMap.insert( std::make_pair(app.size(), app) );
+				}
+
+				//iterator starts with the app with the min size (SJF)
+				for ( auto app_pair : AppOrderMap )
+				{
+					app = app_pair.second;
+					RuntimeList.push_back(app);
+				}
+			}
+			if ( ScheduleType == "PS" )
+			{
+				PCB* process;
+				int key;
+				MetaDataList_t app;
+				std::multimap<int, MetaDataList_t> AppOrderMap;
+				for ( auto process_pair : PCBlocks )
+				{
+					process = process_pair.second;
+					key = process->getIOCount();
+					app = Applications[process->getID()];
+
+					AppOrderMap.insert( std::make_pair(key, app) );
+				}
+
+				//iterate through starting with max IO count
+				for ( auto it=AppOrderMap.rbegin(); it!=AppOrderMap.rend(); ++it )
+				{
+					app = it->second;
+					RuntimeList.push_back(app);
+				}
+			}
+
+			//Append S{begin} to the beginning of the runtime list
+			auto firstApp = RuntimeList.begin();
+			firstApp->insert(firstApp->begin(), startData);
+
+			// Print the app operations
+			int currentCount;
+			// MetaDataList_t currentApp;
+			for ( auto currentApp : RuntimeList )
+			{
+				for ( auto operation : currentApp )
+				{
+					currentCount = operation.getProcessID();
+					printLine(currentCount, operation, rtKey);
+					FileData.push_back(operation);
+				}
+			}
+			printLine(finishData.getProcessID(), finishData, rtKey);
+
 
 		    std::cout << std::endl;
 		    if ( !finalFlagCheck(errlog) )
@@ -395,6 +535,7 @@ public:
 		semaphore = sem_open(semName, O_CREAT | O_EXCL, 0644, semValue);
 		sem_unlink(semName);
 		double runtime, cycles, waitTime;
+		processID++;
 
 		//system
 		if ( MD.getType() == "S" )

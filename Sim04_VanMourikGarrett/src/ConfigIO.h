@@ -121,7 +121,29 @@ public:
 			}
 			std::getline(configFile, currentStr); //skip newline
 
-			// Collect quantum number and cpu scheduling mode
+
+			// Collect quantum number 
+			std::string quantumNumberStr;
+			std::getline(configFile, currentStr, ':');
+			if ( currentStr != "Processor Quantum Number")
+			{
+				errlog.push_back(" ERROR: Config file not formatted correctly! {processor quantum number}\n");
+				return false;
+			}
+			configFile >> std::skipws >> quantumNumberStr;
+			quantumNumber = std::atoi( quantumNumberStr.c_str() );
+			std::getline(configFile, currentStr); //skip newline
+
+
+			// Collect cpu scheduling mode
+			std::getline(configFile, currentStr, ':');
+			if ( currentStr != "CPU Scheduling Code")
+			{
+				errlog.push_back(" ERROR: Config file not formatted correctly! {CPU Scheduling Code}\n");
+				return false;
+			}
+			configFile >> std::skipws >> scheduleType;
+			std::getline(configFile, currentStr); //skip newline
 
 
 			// Collect meta data line-by-line

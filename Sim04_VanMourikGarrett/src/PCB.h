@@ -9,15 +9,19 @@ class PCB
 {
 private:
 	int processID;
+	int processIOCount;
 	ProcessState processState;
 
 public:
-	PCB(int _processID, ProcessState state=START) : processID(_processID), processState(state) {}
+	PCB(int _processID, int _processIOCount = 0, ProcessState state=START) : 
+		processID(_processID), processIOCount(_processIOCount), processState(state) {}
 	~PCB() {}
 
 	//Access functions
 	int getID() const { return processID; }
+	int getIOCount() const { return processIOCount; }
 	ProcessState getState() const { return processState; }
+	void setIOCount(int IOCount) { processIOCount = IOCount; } 
 	void setState(ProcessState state) { processState = state; }
 
 };

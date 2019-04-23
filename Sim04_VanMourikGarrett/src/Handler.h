@@ -43,6 +43,7 @@ public:
 		MetaIO meta_handler("../TestFiles/" + metaDataPath, 
 							config_handler.getSysMemory(),
 							config_handler.getSysMemorySize(),
+							config_handler.getScheduleType(),
 							config_handler.getResources(), 
 							config_handler.getRuntimeKey());
 

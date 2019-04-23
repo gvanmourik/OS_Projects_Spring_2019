@@ -13,6 +13,8 @@ private:
 	std::string Descriptor;
 	int Cycles;
 
+	int processID;
+
 	Key_t DescriptorKey; //associated descriptor set with each process type
 
 public:
@@ -23,10 +25,12 @@ public:
 	std::string getType() { return OpType; }
 	std::string getDescriptor() { return Descriptor; }
 	int getCycles() { return Cycles; }
+	int getProcessID() { return processID; }
+	void setProcessID(int _processID) { processID = _processID; }
 
 
 	/// Other functions
-	bool extractData(const std::string &s)
+	bool extractData(const std::string &s, int &IOCount)
 	{
 		// find the operation type
 		auto type = s.substr(0, s.find('{'));
@@ -35,6 +39,9 @@ public:
 		if ( typeNotDefined(type) )
 			return false;
 		OpType = type;
+		if ( OpType == "I" || OpType == "O" )
+			IOCount++;
+
 		// std::cout << "OpType = " << OpType << std::endl;
 
 		// find the operation descriptor
